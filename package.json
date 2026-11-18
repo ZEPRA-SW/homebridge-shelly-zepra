@@ -1,0 +1,59 @@
+{
+  "name": "homebridge-shelly-zepra",
+  "version": "1.0.0",
+  "description": "Shelly devices, solar shading and local Scene automation in one Homebridge bridge. Feedback, suggestions and bug reports: pm@zepra-app.de",
+  "main": "index.js",
+  "license": "MIT",
+  "keywords": [
+    "homebridge-plugin",
+    "shelly",
+    "homekit"
+  ],
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0 || ^26.0.0",
+    "homebridge": "^1.8.0 || ^2.0.0"
+  },
+  "peerDependencies": {
+    "homebridge": "^1.8.0 || ^2.0.0"
+  },
+  "dependencies": {
+    "@homebridge/plugin-ui-utils": "2.2.7"
+  },
+  "scripts": {
+    "test": "node scripts/test.cjs",
+    "check": "node scripts/check.cjs"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "engines/universal/index.js",
+    "engines/universal/lib/",
+    "engines/universal/homebridge-ui/public/",
+    "engines/shading/index.js",
+    "engines/shading/lib/",
+    "engines/shading/homebridge-ui/public/",
+    "homebridge-ui/",
+    "scripts/",
+    "config.schema.json",
+    "config.example.json",
+    "README.md",
+    "INSTALLATION.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "homebridge": "1.11.1",
+    "homebridge-v2": "npm:homebridge@2.5.0",
+    "playwright": "1.62.1"
+  },
+  "author": "ZEPRA-SW",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZEPRA-SW/homebridge-shelly-zepra.git"
+  },
+  "homepage": "https://github.com/ZEPRA-SW/homebridge-shelly-zepra#readme",
+  "bugs": {
+    "url": "https://github.com/ZEPRA-SW/homebridge-shelly-zepra/issues",
+    "email": "pm@zepra-app.de"
+  }
+}

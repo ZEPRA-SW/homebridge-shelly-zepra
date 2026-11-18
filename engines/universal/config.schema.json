@@ -1,0 +1,613 @@
+{
+  "pluginAlias": "ShellyUniversal",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Shelly Universal"
+      },
+      "language": {
+        "title": "Sprache",
+        "type": "string",
+        "enum": [
+          "de",
+          "en"
+        ],
+        "enumNames": [
+          "Deutsch",
+          "English"
+        ],
+        "default": "de"
+      },
+      "pollInterval": {
+        "title": "Statusintervall (Sekunden)",
+        "type": "number",
+        "minimum": 3,
+        "maximum": 300,
+        "default": 10,
+        "description": "Regelmäßige Statusabfrage. Bei vielen Geräten zunächst 10–30 Sekunden wählen."
+      },
+      "devices": {
+        "title": "Manuell eingerichtete Shellys",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "title": "Dauerhafte eindeutige ID",
+              "type": "string",
+              "minLength": 1,
+              "description": "Frei wählen und später beibehalten. Bestimmt die HomeKit-Identität unabhängig von der IP."
+            },
+            "name": {
+              "title": "Name in Apple Home",
+              "type": "string",
+              "minLength": 1
+            },
+            "host": {
+              "title": "IP-Adresse",
+              "type": "string",
+              "minLength": 1,
+              "description": "Nur manuell eingetragene IPv4/IPv6-Adresse; keine Suche im Netzwerk."
+            },
+            "shellyDeviceId": {
+              "title": "Shelly-Geräte-ID",
+              "type": "string",
+              "minLength": 1,
+              "description": "MAC/12-stellige Kennung oder vollständige Shelly-ID. Muss zur Hardware an der IP passen."
+            },
+            "generation": {
+              "title": "API-Generation",
+              "type": "string",
+              "enum": [
+                "auto",
+                "gen1",
+                "rpc"
+              ],
+              "enumNames": [
+                "An dieser IP prüfen",
+                "Gen1 (HTTP)",
+                "RPC / Wall Display"
+              ],
+              "default": "auto"
+            },
+            "username": {
+              "title": "Gen1-Benutzername",
+              "type": "string",
+              "default": "admin",
+              "description": "Nur Gen1 Basic Auth. Bei RPC ist der Benutzer immer admin."
+            },
+            "password": {
+              "title": "Shelly-Passwort (optional)",
+              "type": "string",
+              "format": "password"
+            },
+            "energy": {
+              "title": "Leistungs- und Energiewerte anzeigen",
+              "type": "boolean",
+              "default": true,
+              "description": "Je gemeldetem Kanal/Phase. Zusatzwerte für kompatible Apps; Apple Home zeigt diese nicht vollständig an."
+            },
+            "channels": {
+              "title": "Ausgänge",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "component",
+                  "type"
+                ],
+                "properties": {
+                  "component": {
+                    "title": "Komponenten-ID",
+                    "type": "string",
+                    "pattern": "^(switch|light|rgb|rgbw|cct|relay|color|white):[0-9]+$",
+                    "description": "RPC z.B. switch:0 oder light:0. Gen1 relay:0, light:0, color:0 oder white:0. Keine Cover."
+                  },
+                  "name": {
+                    "title": "Kanalname",
+                    "type": "string"
+                  },
+                  "type": {
+                    "title": "HomeKit-Darstellung",
+                    "type": "string",
+                    "enum": [
+                      "switch",
+                      "outlet",
+                      "light"
+                    ],
+                    "enumNames": [
+                      "Schalter",
+                      "Steckdose",
+                      "Licht"
+                    ],
+                    "default": "switch"
+                  },
+                  "minKelvin": {
+                    "title": "Minimale Farbtemperatur (Kelvin)",
+                    "type": "integer",
+                    "minimum": 2000,
+                    "maximum": 10000,
+                    "default": 2700,
+                    "description": "Nur bei tatsächlich gemeldeter Farbtemperatur; an die Gerätegrenzen anpassen."
+                  },
+                  "maxKelvin": {
+                    "title": "Maximale Farbtemperatur (Kelvin)",
+                    "type": "integer",
+                    "minimum": 2000,
+                    "maximum": 10000,
+                    "default": 6500
+                  },
+                  "enabled": {
+                    "title": "Kanal anzeigen",
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "showEnergy": {
+                    "title": "Messwerte dieses Kanals anzeigen",
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "minBrightness": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "maxBrightness": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "onBrightness": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Nur beim Wechsel von Aus auf Ein. Eine ausdrücklich gesetzte Dimmhelligkeit hat Vorrang. Leer: Helligkeit des Shellys beibehalten."
+                  },
+                  "transitionSeconds": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 60
+                  }
+                }
+              }
+            },
+            "inputs": {
+              "title": "Digitale Eingänge / i4",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "component",
+                  "mode"
+                ],
+                "properties": {
+                  "component": {
+                    "title": "Komponenten-ID",
+                    "type": "string",
+                    "pattern": "^(input:[0-9]+|extinput:[0-9]+)$",
+                    "description": "input:0 bis input:3 beim i4; RPC-Add-on z.B. input:100. Gen1-Add-on: extinput:0."
+                  },
+                  "name": {
+                    "title": "Kanalname",
+                    "type": "string"
+                  },
+                  "mode": {
+                    "title": "Eingangsdarstellung",
+                    "type": "string",
+                    "enum": [
+                      "state",
+                      "button"
+                    ],
+                    "enumNames": [
+                      "Zustand (Kontaktsensor)",
+                      "Taste (einfach / doppelt / lang)"
+                    ],
+                    "default": "state"
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            },
+            "bthome": {
+              "title": "Manuell zugeordnete BTHome-Geräte",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "deviceComponent"
+                ],
+                "properties": {
+                  "id": {
+                    "title": "Dauerhafte eindeutige ID",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "title": "Name in Apple Home",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "deviceComponent": {
+                    "title": "BTHome-Gerätekomponente",
+                    "type": "string",
+                    "pattern": "^bthomedevice:2[0-9][0-9]$",
+                    "description": "Z.B. bthomedevice:200 beim Host P_Dimmer_Wohnen. Messsensoren werden über die MAC-Zuordnung gelesen; ihre IDs sind separat."
+                  },
+                  "staleAfter": {
+                    "title": "Veraltet nach (Sekunden)",
+                    "type": "integer",
+                    "minimum": 60,
+                    "default": 86400,
+                    "description": "Danach melden Messwerte einen Kommunikationsfehler. An das Sendeintervall des Sensors anpassen."
+                  },
+                  "buttonIndices": {
+                    "title": "BTHome-Tastenindizes",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 255
+                    },
+                    "description": "Optional: z.B. 0 für die erste Taste. Wird gegen GetKnownObjects geprüft. Keine Dreh-/Dreifachgesten."
+                  }
+                }
+              }
+            },
+            "modelId": {
+              "title": "Gerätemodell",
+              "type": "string",
+              "enum": [
+                "gen1-1",
+                "gen1-1pm",
+                "gen1-2",
+                "gen1-25",
+                "gen1-4pro",
+                "gen1-plug",
+                "gen1-plugs",
+                "gen1-dimmer",
+                "gen1-dimmer2",
+                "gen1-duo",
+                "gen1-bulb",
+                "gen1-rgbw2",
+                "gen1-em",
+                "gen1-3em",
+                "plus1",
+                "plus1pm",
+                "plus2pm",
+                "plusplugs",
+                "pro1",
+                "pro1pm",
+                "pro2",
+                "pro2pm",
+                "pro3",
+                "pro4pm",
+                "plusi4",
+                "plus10v",
+                "pluswall",
+                "pro-dimmer1pm",
+                "pro-dimmer2pm",
+                "pro-10v",
+                "plus-rgbw",
+                "g3-1",
+                "g3-1pm",
+                "g3-2pm",
+                "g3-1mini",
+                "g3-1pmmini",
+                "g3-plugs",
+                "g3-i4",
+                "g3-10v",
+                "g3-dimmer",
+                "g4-1",
+                "g4-1pm",
+                "g4-2pm",
+                "plus-pmmini",
+                "g3-pmmini",
+                "pro-em",
+                "pro-3em",
+                "g3-em",
+                "wall",
+                "wall-x2",
+                "wall-xl"
+              ],
+              "enumNames": [
+                "Shelly 1 (Gen1)",
+                "Shelly 1PM (Gen1)",
+                "Shelly 2 (Gen1, Relaisprofil)",
+                "Shelly 2.5 (Gen1, Relaisprofil)",
+                "Shelly 4Pro (Gen1)",
+                "Shelly Plug (Gen1)",
+                "Shelly Plug S (Gen1)",
+                "Shelly Dimmer (Gen1)",
+                "Shelly Dimmer 2 (Gen1)",
+                "Shelly Duo (Gen1)",
+                "Shelly Bulb (Gen1)",
+                "Shelly RGBW2 (Gen1)",
+                "Shelly EM (Gen1)",
+                "Shelly 3EM (Gen1)",
+                "Shelly Plus 1",
+                "Shelly Plus 1PM",
+                "Shelly Plus 2PM (Schalterprofil)",
+                "Shelly Plus Plug S",
+                "Shelly Pro 1",
+                "Shelly Pro 1PM",
+                "Shelly Pro 2",
+                "Shelly Pro 2PM (Schalterprofil)",
+                "Shelly Pro 3",
+                "Shelly Pro 4PM",
+                "Shelly Plus i4 / i4 DC",
+                "Shelly Plus 0–10V Dimmer",
+                "Shelly Plus Wall Dimmer",
+                "Shelly Pro Dimmer 1PM",
+                "Shelly Pro Dimmer 2PM",
+                "Shelly Pro Dimmer 0/1–10V PM",
+                "Shelly Plus RGBW PM",
+                "Shelly 1 Gen3",
+                "Shelly 1PM Gen3",
+                "Shelly 2PM Gen3 (Schalterprofil)",
+                "Shelly 1 Mini Gen3",
+                "Shelly 1PM Mini Gen3",
+                "Shelly Plug S Gen3",
+                "Shelly i4 / i4 DC Gen3",
+                "Shelly Dimmer 0/1–10V PM Gen3",
+                "Shelly Dimmer Gen3",
+                "Shelly 1 Gen4",
+                "Shelly 1PM Gen4",
+                "Shelly 2PM Gen4 (Schalterprofil)",
+                "Shelly Plus PM Mini",
+                "Shelly PM Mini Gen3",
+                "Shelly Pro EM / Pro EM-50",
+                "Shelly Pro 3EM / 3EM-400",
+                "Shelly EM Gen3",
+                "Shelly Wall Display (4 Zoll)",
+                "Shelly Wall Display X2 (6,9 Zoll)",
+                "Shelly Wall Display XL (10,1 Zoll)"
+              ]
+            },
+            "profileId": {
+              "title": "Lichtprofil am Shelly",
+              "type": "string"
+            },
+            "addons": {
+              "title": "Sensor-Add-ons",
+              "type": "array",
+              "maxItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "gen1-sensor",
+                      "plus-addon",
+                      "pro-sensor"
+                    ]
+                  },
+                  "temperature": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "humidity": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "inputId": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 199
+                  },
+                  "inputId2": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 199
+                  }
+                }
+              }
+            },
+            "tileMode": {
+              "title": "HomeKit-Kacheln",
+              "type": "string",
+              "enum": [
+                "separate",
+                "grouped"
+              ],
+              "enumNames": [
+                "Einzelkacheln",
+                "Gesamtkachel"
+              ],
+              "default": "separate",
+              "description": "Einzelkacheln können verschiedenen Räumen zugeordnet werden; die Gesamtkachel ist ein gemeinsames Gerät. Ein Wechsel kann neue HomeKit-Zuordnungen erfordern."
+            },
+            "thermostat": {
+              "title": "Thermostat in HomeKit anzeigen",
+              "type": "boolean",
+              "default": false,
+              "description": "Optional für Wall Displays. Eigenes HomeKit-Gerät mit Aus/Heizen/Kühlen und Sollwert 5–35 °C. Heiz-/Kühlmodus lässt sich in HomeKit wechseln. Sensor- und Aktorzuordnung am Display bleiben erhalten."
+            },
+            "wallIlluminance": {
+              "title": "Helligkeit des Displays anzeigen",
+              "type": "boolean",
+              "default": false,
+              "description": "Optionaler Helligkeitssensor des Wall Displays in Lux."
+            },
+            "wallTemperature": {
+              "title": "Temperatur des Displays anzeigen",
+              "type": "boolean",
+              "default": false,
+              "description": "Optionaler Temperatursensor. Ungültige oder vom Gerät als fehlerhaft gemeldete Werte erscheinen als Messfehler; gültige Werte werden automatisch übernommen."
+            },
+            "wallHumidity": {
+              "title": "Luftfeuchte des Displays anzeigen",
+              "type": "boolean",
+              "default": false,
+              "description": "Optionaler Feuchtesensor. Auch bei derzeit fehlendem Sensor/Treiber aktivierbar; ungültige Werte werden als Messfehler gemeldet."
+            },
+            "wallMotion": {
+              "title": "Bewegungssensor des Displays anzeigen",
+              "type": "boolean",
+              "default": false,
+              "description": "Optional, sofern die Firmware eine Bewegungskomponente meldet."
+            },
+            "virtualComponents": {
+              "title": "Virtuelle Komponenten",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "component",
+                  "name",
+                  "mode"
+                ],
+                "properties": {
+                  "component": {
+                    "title": "Komponenten-ID",
+                    "type": "string",
+                    "pattern": "^(boolean|button):2[0-9][0-9]$",
+                    "description": "Bereits angelegte Komponente, zum Beispiel boolean:200 oder button:200."
+                  },
+                  "name": {
+                    "title": "Name in Apple Home",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "mode": {
+                    "title": "Verwendung",
+                    "type": "string",
+                    "enum": [
+                      "switch",
+                      "trigger",
+                      "events"
+                    ],
+                    "enumNames": [
+                      "Ein/Aus-Schalter",
+                      "Aus HomeKit auslösen",
+                      "Tastendrücke für HomeKit-Szenen empfangen"
+                    ]
+                  },
+                  "event": {
+                    "title": "Ausgelöster Tastendruck",
+                    "type": "string",
+                    "enum": [
+                      "single_push",
+                      "double_push",
+                      "triple_push",
+                      "long_push"
+                    ],
+                    "enumNames": [
+                      "Einfach",
+                      "Doppelt",
+                      "Dreifach",
+                      "Lang"
+                    ],
+                    "default": "single_push"
+                  },
+                  "enabled": {
+                    "title": "Komponente anzeigen",
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            },
+            "rebootEnabled": {
+              "title": "Täglicher Neustart",
+              "type": "boolean",
+              "default": false,
+              "description": "Startet nur diesen Shelly neu. Homebridge muss zur gewählten Zeit laufen."
+            },
+            "rebootTime": {
+              "title": "Neustartzeit (HH:MM)",
+              "type": "string",
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+              "description": "Täglich in der Zeitzone des Raspberry Pi, z. B. 04:30. Verpasste Termine werden nicht nachgeholt. Nach Änderungen speichern und Homebridge neu starten."
+            },
+            "connection": {
+              "title": "Verbindung",
+              "type": "string",
+              "enum": [
+                "local",
+                "cloud"
+              ],
+              "enumNames": [
+                "Lokal",
+                "Cloud"
+              ],
+              "default": "local"
+            },
+            "cloudDeviceId": {
+              "title": "Cloud-Geräte-ID",
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{6,12}$"
+            },
+            "cloudServer": {
+              "title": "Cloud-Serveradresse",
+              "type": "string",
+              "description": "Serveradresse aus Shelly Smart Control → Benutzereinstellungen → Authorization cloud key, z. B. https://shelly-123-eu.shelly.cloud"
+            },
+            "cloudKey": {
+              "title": "Cloudschlüssel",
+              "type": "string",
+              "format": "password",
+              "description": "Autorisierungsschlüssel des Shelly-Kontos. Wird in der Homebridge-Konfiguration gespeichert."
+            },
+            "cloudSensors": {
+              "title": "Cloud-Sensorwerte anzeigen",
+              "type": "boolean",
+              "default": false
+            },
+            "homekitEnabled": {
+              "title": "In Apple Home anzeigen",
+              "type": "boolean",
+              "default": true,
+              "description": "Ausschalten blendet alle HomeKit-Kacheln dieses Geräts aus. Status und Leistungswerte bleiben im Plugin sichtbar. Speichern und Child-Bridge neu starten. Beim späteren Einblenden können Räume und Automationen neu zugeordnet werden müssen."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "connection": {
+                    "const": "cloud"
+                  }
+                },
+                "required": [
+                  "connection"
+                ]
+              },
+              "then": {
+                "required": [
+                  "cloudDeviceId",
+                  "cloudServer",
+                  "cloudKey"
+                ]
+              },
+              "else": {
+                "required": [
+                  "host",
+                  "shellyDeviceId"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

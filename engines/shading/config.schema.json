@@ -1,0 +1,376 @@
+{
+  "pluginAlias": "ShellyRaffstore",
+  "pluginType": "platform",
+  "singular": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Shelly Raffstore"
+      },
+      "pollInterval": {
+        "title": "Statusintervall (Sekunden)",
+        "type": "number",
+        "minimum": 1,
+        "default": 3,
+        "description": "Liest Position und Zustand vom Shelly aus. Dieses Intervall löst keine Lamellennachstellung aus."
+      },
+      "devices": {
+        "title": "Raffstores und Rollläden",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "title": "Dauerhafte eindeutige ID",
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "title": "Name in Apple Home",
+              "type": "string",
+              "minLength": 1
+            },
+            "host": {
+              "title": "IP-Adresse oder Hostname",
+              "type": "string",
+              "minLength": 1
+            },
+            "coverId": {
+              "title": "Cover-Kanalnummer (meist 0)",
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "password": {
+              "title": "Shelly-Passwort (optional)",
+              "type": "string",
+              "format": "password"
+            },
+            "separateSlatControl": {
+              "title": "Zusätzliche HomeKit-Kachel für Lamellen",
+              "type": "boolean",
+              "default": false,
+              "description": "Zeigt die Lamellen als separates Rollladen-Gerät: 0 % geschlossen, 100 % offen. Nur bei Raffstores verfügbar."
+            },
+            "slatName": {
+              "title": "Name der Lamellenkachel (optional)",
+              "type": "string",
+              "description": "Ohne Angabe wird der Gerätename mit dem Zusatz Lamellen verwendet."
+            },
+            "deviceType": {
+              "title": "Gerätetyp",
+              "type": "string",
+              "enum": [
+                "raffstore",
+                "roller"
+              ],
+              "enumNames": [
+                "Raffstore (mit Lamellen)",
+                "Rollladen (ohne Lamellen)"
+              ],
+              "default": "raffstore"
+            },
+            "sunAutomation": {
+              "title": "Sonnenstandsautomatik",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "title": "Sonnenautomatik einrichten",
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Erzeugt einen HomeKit-Schalter. Bei erstmaliger Einrichtung ist die Automatik eingeschaltet. Berechnung nur nach Sonnenstand, ohne Wetter-/Helligkeitssensor."
+                },
+                "orientation": {
+                  "title": "Fensterausrichtung (Grad)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 359.9,
+                  "default": 166,
+                  "description": "Blick nach außen: Nord 0°, Ost 90°, Süd 180°, West 270°."
+                },
+                "shadePosition": {
+                  "title": "Beschattungshöhe für Rollläden (%)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "default": 30,
+                  "description": "0 % = ganz geschlossen, 100 % = ganz offen. Raffstores fahren immer auf 0 %."
+                },
+                "endBehavior": {
+                  "title": "Nach Ende der direkten Sonne",
+                  "type": "string",
+                  "default": "keep",
+                  "enum": [
+                    "keep",
+                    "open",
+                    "close",
+                    "horizontal",
+                    "custom"
+                  ],
+                  "enumNames": [
+                    "Letzte Stellung beibehalten",
+                    "Ganz öffnen",
+                    "Ganz schließen (inklusive Lamellen)",
+                    "Lamellen waagerecht (nur Raffstore)",
+                    "Gewünschte Position"
+                  ]
+                },
+                "endPosition": {
+                  "title": "Gewünschte Behang-Endposition (%)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "default": 100,
+                  "description": "Gilt bei Gewünschte Position. 0 % geschlossen, 100 % offen."
+                },
+                "endSlatPosition": {
+                  "title": "Gewünschte Lamellen-Endposition (%)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "default": 100,
+                  "description": "Nur Raffstore und Gewünschte Position. 100 % = waagerecht."
+                },
+                "minElevation": {
+                  "title": "Minimale Sonnenhöhe (Grad)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 80,
+                  "default": 5
+                },
+                "leftAngle": {
+                  "title": "Sonnenbereich links (Grad)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 89,
+                  "default": 80,
+                  "description": "Blick von innen senkrecht aus dem Fenster: maximaler Winkel links der Fensterausrichtung. Ein kleinerer Wert grenzt diese Seite ein, zum Beispiel bei einer Nische oder Nachbarbebauung."
+                },
+                "rightAngle": {
+                  "title": "Sonnenbereich rechts (Grad)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 89,
+                  "default": 80,
+                  "description": "Blick von innen senkrecht aus dem Fenster: maximaler Winkel rechts der Fensterausrichtung. Beide Seiten sind unabhängig einstellbar; dies ist keine automatische Gebäudeverschattungsberechnung."
+                },
+                "startOffsetMinutes": {
+                  "title": "Zeitverschiebung Beschattungsbeginn (Minuten)",
+                  "type": "number",
+                  "minimum": -120,
+                  "maximum": 120,
+                  "default": 2,
+                  "description": "Negativ = früher, positiv = später, 0 = zum berechneten Beginn. Beispiel: −10 startet 10 Minuten früher, +10 startet 10 Minuten später. Ein vorhandener gemeinsamer Verzögerungswert wird übernommen."
+                },
+                "endOffsetMinutes": {
+                  "title": "Zeitverschiebung Beschattungsende (Minuten)",
+                  "type": "number",
+                  "minimum": -120,
+                  "maximum": 120,
+                  "default": 2,
+                  "description": "Negativ = früher, positiv = später, 0 = zum berechneten Ende. Beispiel: −10 beendet 10 Minuten früher, +10 beendet 10 Minuten später. Unabhängig vom Beginn einstellbar."
+                },
+                "minCommandSeconds": {
+                  "title": "Mindestintervall für Lamellennachführung (Sekunden)",
+                  "type": "number",
+                  "minimum": 10,
+                  "maximum": 3600,
+                  "default": 1200,
+                  "description": "Mindestabstand zwischen automatischen Lamellennachstellungen: 1200 Sekunden = 20 Minuten. Bereits gespeicherte Werte bleiben erhalten. Manuelle Bedienung, Beschattungsbeginn und Windalarm werden dadurch nicht verzögert."
+                },
+                "slatStep": {
+                  "title": "Lamellen-Mindeständerung (%)",
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 20,
+                  "default": 3
+                },
+                "slatWidth": {
+                  "title": "Lamellenbreite (mm)",
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 300,
+                  "default": 80,
+                  "description": "An den tatsächlichen Raffstore anpassen. 80 mm ist nur ein Startwert."
+                },
+                "slatSpacing": {
+                  "title": "Vertikaler Lamellenabstand Mitte zu Mitte (mm)",
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 300,
+                  "default": 70,
+                  "description": "An den tatsächlichen Raffstore anpassen. Darf die Breite nicht übersteigen."
+                },
+                "slatMargin": {
+                  "title": "Zusätzlicher Schließwinkel (Grad)",
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 30,
+                  "default": 5,
+                  "description": "Zugabe zum berechneten Winkel gegen direkten Sonneneinfall."
+                }
+              }
+            },
+            "windProtection": {
+              "title": "Windalarm-Schalter einrichten (nur Raffstore)",
+              "type": "boolean",
+              "default": false,
+              "description": "Optionaler zweiter Schalter neben der Beschattungsautomatik. Bei Alarm hochfahren und Plugin-Bedienung sperren. Kein eingebauter Windsensor; Alarm per HomeKit oder Automation setzen."
+            },
+            "positionWaitTimeout": {
+              "title": "Zeitlimit für wartende Lamellenbefehle (Sekunden)",
+              "type": "number",
+              "default": 300,
+              "minimum": 30,
+              "maximum": 900,
+              "description": "Nur Abbruchgrenze: Lamellen erst nach bestätigter Behangposition freigeben, nicht allein nach Zeitablauf."
+            },
+            "positionTolerance": {
+              "title": "Toleranz der Behangposition (Prozentpunkte)",
+              "type": "number",
+              "default": 1,
+              "minimum": 0.1,
+              "maximum": 5
+            },
+            "shellyDeviceId": {
+              "title": "Shelly-Geräte-ID (Pflichtangabe)",
+              "type": "string",
+              "minLength": 1,
+              "description": "Echte Kennung aus der Shelly-Oberfläche, als 12-stelliger Hex-Code/MAC oder vollständige Shelly-ID. Vor jedem Cover-Aufruf mit dem Gerät an der IP-Adresse abgleichen."
+            },
+            "dailyReboot": {
+              "title": "Täglicher Shelly-Neustart",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "title": "Täglichen Neustart aktivieren",
+                  "type": "boolean",
+                  "default": false
+                },
+                "time": {
+                  "title": "Neustart-Uhrzeit",
+                  "type": "string",
+                  "format": "time",
+                  "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                  "default": "03:00",
+                  "description": "Täglich zur eingestellten Uhrzeit (Zeitzone des Plugins). Bei Fahrt, Windalarm oder Rückfahrt wird der Neustart nachgeholt. Bei mehreren Kanälen desselben Shellys nur einen Zeitplan aktivieren."
+                }
+              }
+            },
+            "connection": {
+              "title": "Verbindung",
+              "type": "string",
+              "enum": [
+                "local",
+                "cloud"
+              ],
+              "enumNames": [
+                "Lokal",
+                "Cloud"
+              ],
+              "default": "local"
+            },
+            "cloudServer": {
+              "title": "Shelly-Cloud-Serveradresse",
+              "type": "string",
+              "minLength": 1,
+              "description": "Serveradresse aus der Shelly-App, zusammen mit dem Cloudschlüssel angezeigt. Nur HTTPS und Shelly-Cloud-Server."
+            },
+            "cloudKey": {
+              "title": "Shelly-Cloudschlüssel",
+              "type": "string",
+              "format": "password",
+              "minLength": 1,
+              "description": "Vertraulich. Wird nur in der Homebridge-Konfiguration gespeichert und nicht protokolliert."
+            },
+            "cloudDeviceId": {
+              "title": "Shelly-Cloud-Geräte-ID",
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{6,16}$",
+              "description": "Geräte-ID aus der Shelly-App. Cloud benötigt keine lokale IP-Adresse. Statusabfragen erfolgen frühestens alle 30 Sekunden."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "connection": {
+                    "const": "cloud"
+                  }
+                },
+                "required": [
+                  "connection"
+                ]
+              },
+              "then": {
+                "required": [
+                  "cloudServer",
+                  "cloudKey",
+                  "cloudDeviceId"
+                ]
+              },
+              "else": {
+                "required": [
+                  "host",
+                  "shellyDeviceId"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "latitude": {
+        "title": "Breitengrad",
+        "type": "number",
+        "minimum": -89.9,
+        "maximum": 89.9,
+        "default": 52.52,
+        "description": "Für Berlin-Zentrum: ungefähr 52.52° Nord. Für genaue Werte Standort anpassen."
+      },
+      "longitude": {
+        "title": "Längengrad",
+        "type": "number",
+        "minimum": -180,
+        "maximum": 180,
+        "default": 13.405,
+        "description": "Für Berlin-Zentrum: ungefähr 13.405° Ost."
+      },
+      "timeZone": {
+        "title": "Zeitzone für die Tagesübersicht",
+        "type": "string",
+        "default": "Europe/Berlin"
+      },
+      "language": {
+        "title": "Sprache",
+        "type": "string",
+        "enum": [
+          "de",
+          "en",
+          "fr",
+          "es"
+        ],
+        "enumNames": [
+          "Deutsch",
+          "English",
+          "Français",
+          "Español"
+        ],
+        "default": "de"
+      },
+      "globalControls": {
+        "title": "Globale Schalter in Apple Home",
+        "type": "boolean",
+        "default": true,
+        "description": "Gemeinsame Steuerung für Auto, Windalarm und Automatik Pause. Windalarm gilt nur für Raffstores mit aktiviertem Windschutz. Auto verändert bestehende Pausen nicht; der Pausenschalter setzt oder löscht sie gemeinsam."
+      }
+    }
+  },
+  "customUi": true
+}

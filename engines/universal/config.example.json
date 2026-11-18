@@ -1,0 +1,121 @@
+{
+  "platform": "ShellyUniversal",
+  "name": "Shelly Universal",
+  "language": "de",
+  "pollInterval": 10,
+  "devices": [
+    {
+      "id": "steckdose-wohnzimmer",
+      "name": "Steckdose Wohnzimmer",
+      "host": "192.0.2.10",
+      "shellyDeviceId": "aabbccddeeff",
+      "generation": "rpc",
+      "energy": true,
+      "channels": [
+        {
+          "component": "switch:0",
+          "name": "Steckdose",
+          "type": "outlet",
+          "enabled": true
+        }
+      ],
+      "inputs": [],
+      "bthome": [],
+      "modelId": "plusplugs",
+      "addons": [],
+      "rebootEnabled": false,
+      "rebootTime": "04:30"
+    },
+    {
+      "id": "p-dimmer-wohnen",
+      "name": "P_Dimmer_Wohnen",
+      "host": "192.0.2.11",
+      "shellyDeviceId": "112233445566",
+      "generation": "rpc",
+      "channels": [
+        {
+          "component": "light:0",
+          "name": "Wohnlicht",
+          "type": "light",
+          "enabled": true
+        }
+      ],
+      "inputs": [
+        {
+          "component": "input:0",
+          "name": "Wohntaster",
+          "mode": "button",
+          "enabled": true
+        },
+        {
+          "component": "input:1",
+          "name": "Eingang 2",
+          "mode": "state",
+          "enabled": false
+        }
+      ],
+      "bthome": [
+        {
+          "id": "blu-ht-wohnen",
+          "name": "BLU H&T Wohnen",
+          "deviceComponent": "bthomedevice:200",
+          "staleAfter": 86400
+        }
+      ],
+      "modelId": "g3-10v",
+      "addons": [],
+      "energy": true
+    },
+    {
+      "id": "i4-flur",
+      "name": "i4 Flur",
+      "host": "192.0.2.12",
+      "shellyDeviceId": "aabb11223344",
+      "channels": [],
+      "inputs": [
+        {
+          "component": "input:0",
+          "name": "Taste 1",
+          "mode": "button",
+          "enabled": true
+        },
+        {
+          "component": "input:1",
+          "name": "Taste 2",
+          "mode": "button",
+          "enabled": true
+        },
+        {
+          "component": "input:2",
+          "name": "Taste 3",
+          "mode": "button",
+          "enabled": true
+        },
+        {
+          "component": "input:3",
+          "name": "Taste 4",
+          "mode": "button",
+          "enabled": true
+        }
+      ],
+      "bthome": [],
+      "modelId": "plusi4",
+      "addons": [],
+      "energy": false,
+      "generation": "rpc"
+    },
+    {
+      "id": "em-haus",
+      "name": "Energiemessung Haus",
+      "host": "192.0.2.13",
+      "shellyDeviceId": "aabb55667788",
+      "channels": [],
+      "inputs": [],
+      "energy": true,
+      "bthome": [],
+      "modelId": "pro-3em",
+      "addons": [],
+      "generation": "rpc"
+    }
+  ]
+}

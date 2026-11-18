@@ -1,0 +1,55 @@
+'use strict';
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.ZepraScenes=factory();})(typeof window==='object'?window:globalThis,()=>{
+ const labels={On:'Schaltzustand',Brightness:'Helligkeit (%)',CurrentTemperature:'Temperatur (°C)',CurrentRelativeHumidity:'Luftfeuchte (%)',CurrentAmbientLightLevel:'Helligkeit (lux)',BatteryLevel:'Batterie (%)',MotionDetected:'Bewegung',ContactSensorState:'Kontakt (0 geschlossen / 1 offen)',Power:'Leistung (W)',Energy:'Energie (kWh)',Voltage:'Spannung (V)',Current:'Strom (A)',position:'Behang (%)',slatPosition:'Lamellen (%)',automationEnabled:'Auto',manualPaused:'Automatik Pause',windAlarm:'Windalarm'};
+ const boolean=new Set(['On','MotionDetected','automationEnabled','manualPaused','windAlarm']);
+ const properties={On:'Ein / Aus',Brightness:'Helligkeit (%)',position:'Behang (%)',slatPosition:'Lamellen (%)',auto:'Auto',pause:'Automatik Pause',wind:'Windalarm'};
+ const key=r=>JSON.stringify([r.area,r.deviceId,r.sensorId||'',r.component||'',r.metric]);
+ const endpoint=r=>JSON.stringify([r.area,r.deviceId,r.component||'']);
+ function getDevice(config,ref){if(!ref)return undefined;return (ref.area==='shading'?config.shading?.devices:ref.area==='devices'?config.devices:[])?.find(d=>d.id===ref.deviceId);}
+ function mode(scene){return scene.mode??(scene.enabled?'on':'off');}
+ function timeValid(value){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);}
+ function scheduleActive(schedule,day,time){if(!schedule)return false;const {start,end,days}=schedule;if(start<end)return days.includes(day)&&time>=start&&time<end;return days.includes(day)&&time>=start||days.includes((day+6)%7)&&time<end;}
+ function actions(scene){return Array.isArray(scene.actions)?scene.actions:scene.action?[{...scene.action,delaySeconds:0}]:[];}
+ function conditionLeaves(tree){return tree?.kind==='group'?(tree.children||[]).flatMap(conditionLeaves):tree?[tree]:[];}
+ function validateCondition(tree,config){let count=0;const seen=new Set();function visit(t,depth){
+  if(!t||typeof t!=='object'||depth>5||++count>64||seen.has(t))throw Error('Scene: Bedingungsbaum zu groß oder ungültig (maximal 5 Ebenen und 64 Elemente).');seen.add(t);
+  if(t.kind==='group'){if(!['and','or'].includes(t.operator)||!Array.isArray(t.children)||!t.children.length||t.children.length>16)throw Error('Scene: UND-/ODER-Gruppe benötigt 1 bis 16 Bedingungen.');for(const child of t.children)visit(child,depth+1);return;}
+  if(!['status','value','time'].includes(t.kind))throw Error('Scene: Bedingungsart prüfen.');
+  if(t.kind==='time'){if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t.time)||!Array.isArray(t.days)||!t.days.length||t.days.some(d=>!Number.isInteger(d)||d<0||d>6))throw Error('Scene: Uhrzeit und Wochentage prüfen.');}
+   else{if(!getDevice(config,t.source)||!Object.hasOwn(labels,t.source.metric)||t.source.area==='devices'&&!t.source.component)throw Error('Scene: Quelle nicht verfügbar.');if(!['eq','ne','gt','gte','lt','lte'].includes(t.operator)||!(typeof t.value==='boolean'||Number.isFinite(t.value)))throw Error('Scene: Vergleich prüfen.');if(boolean.has(t.source.metric)&&(!['eq','ne'].includes(t.operator)||typeof t.value!=='boolean'))throw Error('Scene: Schaltzustände benötigen Ein/Aus-Vergleich.');if(!boolean.has(t.source.metric)&&!Number.isFinite(t.value))throw Error('Scene: Zahlenwert erforderlich.');if(!Number.isFinite(t.hysteresis??0)||(t.hysteresis??0)<0)throw Error('Scene: Hysterese muss positiv oder null sein.');if(!Number.isInteger(t.holdSeconds??0)||(t.holdSeconds??0)<0||(t.holdSeconds??0)>86400)throw Error('Scene: Bedingungsdauer muss zwischen 0 und 86400 ganzen Sekunden liegen.');if(t.sourceDevice&&(t.sourceDevice.area!==t.source.area||t.sourceDevice.deviceId!==t.source.deviceId))throw Error('Scene: Shelly und gewählter Zustand passen nicht zusammen.');}
+ }
+ visit(tree,0);return tree;}
+ function validate(scenes=[],config={}){
+  if(!Array.isArray(scenes)||scenes.length>100)throw Error('Scene: maximal 100 Scenes möglich.');const ids=new Set(),enabled=[];
+  for(const scene of scenes){if(!scene||!scene.id||!scene.name?.trim()||ids.has(scene.id))throw Error('Scene benötigt einen Namen und eine eindeutige ID.');ids.add(scene.id);if(scene.restoreOnReset!==undefined&&typeof scene.restoreOnReset!=='boolean')throw Error('Scene: Rücksetzung muss ein/aus sein.');if(scene.enabled!==undefined&&typeof scene.enabled!=='boolean')throw Error('Scene aktiv muss ein/aus sein.');if(!['off','on','schedule'].includes(mode(scene)))throw Error('Scene: Betriebsart prüfen.');if(mode(scene)==='off')continue;
+   if(mode(scene)==='schedule'){const w=scene.schedule;if(!w||!timeValid(w.start)||!timeValid(w.end)||w.start===w.end||!Array.isArray(w.days)||!w.days.length||w.days.some(d=>!Number.isInteger(d)||d<0||d>6))throw Error('Scene: Zeitplan mit unterschiedlichen Beginn-/Endzeiten und Wochentagen angeben.');}
+   const t=scene.condition,steps=actions(scene);if(!t||!['status','value','time','group'].includes(t.kind)||!steps.length)throw Error('Scene: Bedingung und Aktion vervollständigen.');
+   if(!Number.isFinite(scene.cooldownSeconds??60)||(scene.cooldownSeconds??60)<5||(scene.cooldownSeconds??60)>86400)throw Error('Scene: Mindestabstand muss zwischen 5 und 86400 Sekunden liegen.');
+   validateCondition(t,config);
+   if(steps.length>20||steps.reduce((sum,a)=>sum+(a.delaySeconds||0),0)>86400)throw Error('Scene: maximal 20 Aktionen und insgesamt 24 Stunden Wartezeit.');
+   for(const a of steps){if(!a||!Number.isInteger(a.delaySeconds??0)||(a.delaySeconds??0)<0||(a.delaySeconds??0)>86400)throw Error('Scene: Wartezeit muss zwischen 0 und 86400 ganzen Sekunden liegen.');
+   if(a.condition){validateCondition(a.condition,config);if(!Number.isInteger(a.conditionTimeoutSeconds??300)||(a.conditionTimeoutSeconds??300)<1||(a.conditionTimeoutSeconds??300)>86400)throw Error('Scene: Maximale Bedingungswartezeit muss zwischen 1 und 86400 ganzen Sekunden liegen.');}
+   const target=getDevice(config,a);if(!target||!Object.hasOwn(properties,a.property))throw Error('Scene: Ziel nicht verfügbar.');
+   if(a.area==='devices'){if(!['On','Brightness'].includes(a.property)||!target.channels?.some(c=>c.component===a.component&&c.enabled!==false))throw Error('Scene: Ausgang nicht konfiguriert.');}
+   else{if(['On','Brightness'].includes(a.property)||a.property==='slatPosition'&&target.deviceType==='roller'||['auto','pause'].includes(a.property)&&!target.sunAutomation?.enabled||a.property==='wind'&&(target.deviceType==='roller'||target.windProtection!==true))throw Error('Scene: Funktion am Ziel nicht eingerichtet.');}
+   if(['On','auto','pause','wind'].includes(a.property)?typeof a.value!=='boolean':!Number.isFinite(a.value)||a.value<0||a.value>100)throw Error('Scene: Zielwert prüfen.');}enabled.push(scene);
+  }
+  const edges=new Map();for(const s of enabled){for(const leaf of conditionLeaves(s.condition)){if(leaf.kind==='time')continue;const from=endpoint(leaf.source);for(const a of actions(s)){const to=endpoint(a);(edges.get(from)||edges.set(from,new Set()).get(from)).add(to);}}}
+  const visiting=new Set(),done=new Set();function visit(n){if(visiting.has(n))throw Error('Scene: Regelschleife erkannt. Gegenseitige Geräte-Auslösung ist nicht zulässig.');if(done.has(n))return;visiting.add(n);for(const next of edges.get(n)||[])visit(next);visiting.delete(n);done.add(n);}for(const n of edges.keys())visit(n);
+  return scenes;
+ }
+ function compare(value,condition,previous=false){const limit=condition.value,h=condition.hysteresis||0;switch(condition.operator){case'eq':return value===limit;case'ne':return value!==limit;case'gt':return value>(previous?limit-h:limit);case'gte':return value>=(previous?limit-h:limit);case'lt':return value<(previous?limit+h:limit);case'lte':return value<=(previous?limit+h:limit);default:return false;}}
+ function sources(config,data={}){const result=[],seen=new Set();const add=(ref,label)=>{const id=key(ref);if(!seen.has(id)){seen.add(id);result.push({...ref,id,label:label+' · '+labels[ref.metric],type:boolean.has(ref.metric)?'boolean':'number'});}};
+  for(const d of config.devices||[]){const row=data.devices?.find(r=>r.target&&JSON.parse(r.target)[0]===d.id);const base=d.name+' ['+d.id+']';
+   for(const c of d.channels||[]){add({area:'devices',deviceId:d.id,component:c.component,metric:'On'},base+' / '+(c.name||c.component));if(c.type==='light')add({area:'devices',deviceId:d.id,component:c.component,metric:'Brightness'},base+' / '+(c.name||c.component));}
+   for(const c of d.inputs||[])if(c.enabled===true)add({area:'devices',deviceId:d.id,component:c.component,metric:'ContactSensorState'},base+' / '+(c.name||c.component));
+   for(const reading of [...row?.readings||[],...row?.measurements||[]])for(const metric of Object.keys(reading.values||{}))if(Object.hasOwn(labels,metric))add({area:'devices',deviceId:d.id,component:reading.component,metric},base+' / '+(reading.name||reading.component));
+   for(const b of d.bthome||[]){const group=row?.bthome?.find(g=>g.id===b.id&&g.deviceComponent===b.deviceComponent);for(const r of group?.readings||[]){const types={temperature:'CurrentTemperature',humidity:'CurrentRelativeHumidity',lux:'CurrentAmbientLightLevel',battery:'BatteryLevel',motion:'MotionDetected',contact:'ContactSensorState'},metrics=new Set([...Object.keys(r.values||{}),...types[r.type]?[types[r.type]]:[]]);for(const metric of metrics)if(Object.hasOwn(labels,metric))add({area:'devices',deviceId:d.id,sensorId:b.id,component:r.component,metric},base+' / '+(b.name||b.id)+' ['+b.id+'] / '+r.component);}}
+  }
+  for(const d of config.shading?.devices||[]){for(const metric of ['position',...(d.deviceType!=='roller'?['slatPosition']:[]),...(d.sunAutomation?.enabled?['automationEnabled','manualPaused']:[]),...(d.windProtection===true?['windAlarm']:[])])add({area:'shading',deviceId:d.id,metric},d.name+' ['+d.id+']');}
+  return result;
+ }
+ function targets(config){const result=[];for(const d of config.devices||[])for(const c of (d.channels||[]).filter(c=>c.enabled!==false))for(const property of ['On',...(c.type==='light'?['Brightness']:[])])result.push({area:'devices',deviceId:d.id,component:c.component,property,label:d.name+' ['+d.id+'] / '+(c.name||c.component)+' · '+properties[property]});
+  for(const d of config.shading?.devices||[])for(const property of ['position',...(d.deviceType!=='roller'?['slatPosition']:[]),...(d.sunAutomation?.enabled?['auto','pause']:[]),...(d.deviceType!=='roller'&&d.windProtection===true?['wind']:[])])result.push({area:'shading',deviceId:d.id,property,label:d.name+' ['+d.id+'] · '+properties[property]});return result;}
+ return {validate,validateCondition,conditionLeaves,compare,sources,targets,labels,properties,boolean,key,mode,scheduleActive,actions};
+});

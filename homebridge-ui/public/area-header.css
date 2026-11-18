@@ -1,0 +1,12 @@
+/* Shared header for both embedded device areas. */
+:root{--bg:#202124}
+#app,#raffstore-app{max-width:1200px;margin:0 auto;padding:20px 14px;box-sizing:border-box}
+#app .area-header,#raffstore-app .area-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 20px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f1f2f7}
+#app .area-header .eyebrow,#raffstore-app .area-header .eyebrow{font-family:inherit;font-size:11px;font-weight:700;line-height:1.5;letter-spacing:.16em;color:#bd91ff;margin:0}
+#app .area-header h1,#raffstore-app .area-header h1{font-family:inherit;font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.2;letter-spacing:-.03em;margin:4px 0 18px}
+#app .area-header nav,#raffstore-app .area-header nav{display:flex;align-items:center;gap:8px;margin:0 0 16px;padding:0;border:0}
+#app .area-header button,#raffstore-app .area-header button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:160px;min-height:48px;font-family:inherit;font-size:16px;font-weight:500;line-height:1.5;letter-spacing:normal;padding:10px 16px;border:1px solid #3b4250;border-radius:9px;background:#2a303a;color:#f1f2f7;white-space:nowrap}
+#app .area-header button.active-tab,#raffstore-app .area-header button.selected{background:#543879;border-color:#9670c7;color:#fff}
+#app .area-header button:hover,#raffstore-app .area-header button:hover{border-color:#bd91ff}
+html[data-raffstore-theme=light] #raffstore-app .area-header{color:#212331}
+@media(max-width:600px){#app,#raffstore-app{padding:12px 5px}#app .area-header nav,#raffstore-app .area-header nav{width:100%}#app .area-header button,#raffstore-app .area-header button{flex:1;min-width:0;width:auto}}

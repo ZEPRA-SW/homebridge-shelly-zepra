@@ -1,0 +1,8 @@
+'use strict';
+const{test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),{fork}=require('node:child_process');
+test('actual ZEPRA UI server returns saved Scene state and sanitized status through Homebridge IPC',async t=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'zepra-scene-ui-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));await fs.writeFile(path.join(dir,'shelly-zepra-scenes.json'),JSON.stringify({version:1,states:{example:{lastRun:1000,status:'Befehl übergeben',events:[{timestamp:1000,type:'accepted',message:'Befehl übergeben; Endzustand nicht bestätigt'}]}}}));
+ const child=fork(path.resolve(__dirname,'../homebridge-ui/server.js'),[],{env:{...process.env,HOMEBRIDGE_STORAGE_PATH:dir},stdio:['ignore','ignore','pipe','ipc']});t.after(()=>child.kill());
+ function message(predicate){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{cleanup();reject(Error('UI timeout'));},5000);const onMessage=m=>{if(predicate(m)){cleanup();resolve(m);}},onExit=()=>{cleanup();reject(Error('UI stopped'));};function cleanup(){clearTimeout(timer);child.off('message',onMessage);child.off('exit',onExit);}child.on('message',onMessage);child.on('exit',onExit);});}
+ await message(m=>m.action==='ready');const response=message(m=>m.action==='response'&&m.payload?.requestId==='scene-test');child.send({action:'request',path:'/scene-data',requestId:'scene-test'});const r=await response;assert.equal(r.payload.success,true);assert.equal(r.payload.data.states.example.status,'Befehl übergeben');assert.deepEqual(r.payload.data.shading,[]);assert.equal(r.payload.data.states.example.events[0].type,'accepted');
+});

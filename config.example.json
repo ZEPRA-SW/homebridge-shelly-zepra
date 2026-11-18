@@ -1,0 +1,12 @@
+{
+  "platform": "ShellyZepra",
+  "name": "Shelly ZEPRA",
+  "language": "de",
+  "pollInterval": 20,
+  "devices": [],
+  "shading": {
+    "latitude": 52.52,
+    "longitude": 13.405,
+    "devices": []
+  }
+}

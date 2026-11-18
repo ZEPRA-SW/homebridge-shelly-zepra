@@ -1,0 +1,57 @@
+{
+  "platform": "ShellyRaffstore",
+  "name": "Shelly Raffstore",
+  "pollInterval": 3,
+  "latitude": 52.52,
+  "longitude": 13.405,
+  "devices": [
+    {
+      "id": "raffstore-wohnzimmer",
+      "name": "Raffstore Wohnzimmer",
+      "host": "192.0.2.10",
+      "deviceType": "raffstore",
+      "coverId": 0,
+      "separateSlatControl": true,
+      "sunAutomation": {
+        "enabled": false,
+        "orientation": 166,
+        "endBehavior": "horizontal",
+        "slatWidth": 80,
+        "slatSpacing": 70,
+        "minCommandSeconds": 1200,
+        "startOffsetMinutes": 2,
+        "endOffsetMinutes": 2,
+        "leftAngle": 80,
+        "rightAngle": 80
+      },
+      "windProtection": false,
+      "shellyDeviceId": "000000000001",
+      "dailyReboot": {
+        "enabled": false,
+        "time": "03:00"
+      }
+    },
+    {
+      "id": "rollladen-schlafzimmer",
+      "name": "Rollladen Schlafzimmer",
+      "host": "192.0.2.11",
+      "deviceType": "roller",
+      "coverId": 0,
+      "sunAutomation": {
+        "enabled": false,
+        "orientation": 166,
+        "shadePosition": 30,
+        "endBehavior": "custom",
+        "endPosition": 100,
+        "startOffsetMinutes": 2,
+        "endOffsetMinutes": 2,
+        "leftAngle": 80,
+        "rightAngle": 80
+      },
+      "shellyDeviceId": "000000000002"
+    }
+  ],
+  "language": "de",
+  "timeZone": "Europe/Berlin",
+  "globalControls": true
+}

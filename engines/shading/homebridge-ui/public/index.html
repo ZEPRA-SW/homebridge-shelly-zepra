@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="style.css">
+<section id="raffstore-app" aria-label="Shelly Raffstore Einstellungen">
+  <header class="app-heading">
+    <div><div class="eyebrow">SHELLY RAFFSTORE</div><h1>Beschattungsübersicht</h1></div>
+    <nav class="tabs" aria-label="Ansicht">
+      <button type="button" class="selected" id="tab-overview" aria-selected="true">Tagesübersicht</button>
+      <button type="button" id="tab-settings" aria-selected="false">Einstellungen</button>
+    </nav>
+  </header>
+  <div id="message" class="message" role="status" hidden></div>
+  <section id="overview-panel">
+    <div class="toolbar"><label>Tag <input type="date" id="day"></label><span id="location"></span><button type="button" id="refresh">Aktualisieren</button></div>
+    <p class="muted">Der gelbe Balken zeigt die geplante Beschattungsperiode einschließlich Zeitverschiebungen. Der Betriebsstatus zeigt, ob tatsächlich automatisch beschattet wird.</p>
+    <div id="device-cards"></div>
+    <div class="legend"><span class="sun-dot"></span> Geplante Beschattungsperiode <span class="now-dot"></span> Aktuelle Uhrzeit</div>
+    <p class="small muted">Berechnung mit den angezeigten Einstellungen. Änderungen werden für die Steuerung erst nach Speichern und Homebridge-Neustart wirksam. Windalarm und manuelle Pause können die tatsächliche Beschattung verhindern.</p>
+  </section>
+  <section id="settings-panel" hidden>
+    <p class="muted">Jedes Gerät ist einzeln ausklappbar. Als Überschrift dient ausschließlich seine dauerhafte ID. Änderungen unten mit dem Homebridge-Speichern-Knopf übernehmen.</p>
+    <p class="small muted">Reihenfolge mit den Pfeilen ändern oder am Griff ziehen. Anschließend mit Save dauerhaft speichern.</p>
+    <details class="device-settings general"><summary>Allgemeine Einstellungen</summary><div id="general-fields" class="fields"></div></details>
+    <div id="settings-devices"></div>
+    <button type="button" id="add-device" class="add-button">Gerät hinzufügen</button>
+  </section>
+</section>
+<script src="i18n.js"></script>
+<script src="device-copy.js"></script>
+<script src="app.js"></script>
