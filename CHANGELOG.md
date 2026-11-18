@@ -11,5 +11,6 @@
 - Provide optional restoration of prior target values, a fulfilled-condition indicator and a ten-event protocol per Scene.
 - Put Add condition beside Continue to action and expose AND/OR directly.
 - Prepare English public documentation and sanitized, reproducible source and release assets.
+- Publish version 1.0.0 to npm for standard Homebridge installation.
 
 This is the first public release. See README.md for tested combinations, model evidence and limitations. The public preparation does not add npm publication or certify untested devices.

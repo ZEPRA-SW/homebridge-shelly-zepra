@@ -1,12 +1,24 @@
 # Installing Shelly ZEPRA
 
-These instructions install the GitHub release archive. They do not assume that Shelly ZEPRA has been published to npm or appears in Homebridge's plugin search.
+Install through Homebridge UI using the npm package, or use the GitHub release archive as a manual alternative.
 
 ## Before installing
 
 1. Create a Homebridge backup.
 2. Check the requirements and compatibility notes in [README.md](README.md).
 3. If another plugin or automation system already controls the same Shellys, disable its duplicate polling/control for the migration test. Keep its configuration so you can return to it if needed. The ZEPRA package does not enable or disable other plugins.
+
+## Install through Homebridge UI
+
+1. Open the **Plugins** tab in Homebridge UI.
+2. Search for **homebridge-shelly-zepra** and choose **Install**.
+3. Restart Homebridge through its web interface, then open the plugin settings.
+
+If the new package is not indexed in search yet, use the GitHub release archive below. On installations using `/var/lib/homebridge`, the Homebridge web terminal can also install the exact npm release:
+
+```bash
+npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.0.0
+```
 
 ## Install the release archive
 

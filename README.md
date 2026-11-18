@@ -41,7 +41,9 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 ## Installation
 
-Download the `homebridge-shelly-zepra-1.0.0.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md). A GitHub release is separate from publishing a package to npm; these instructions do not assume an npm listing.
+Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
+
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.0.0.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
@@ -148,7 +150,7 @@ npm test
 npm run check
 ```
 
-The additional browser suite is `node test/ui-browser.cjs`. It uses Microsoft Edge by default. For bundled Chromium, install it with `npx playwright install chromium`, set the `PLAYWRIGHT_CHANNEL` environment variable to `bundled`, then run the suite. The CI workflow uses bundled Chromium. Node 22 is declared compatible but has not yet been validated locally; the CI matrix will exercise it separately.
+The additional browser suite is `node test/ui-browser.cjs`. It uses Microsoft Edge by default. For bundled Chromium, install it with `npx playwright install chromium`, set the `PLAYWRIGHT_CHANNEL` environment variable to `bundled`, then run the suite. The CI workflow uses bundled Chromium. The GitHub CI matrix additionally checks Node 22, 24 and 26 against both installed Homebridge versions. Node 22 has not been validated locally.
 
 ## Feedback, suggestions and bug reports
 
