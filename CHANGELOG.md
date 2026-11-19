@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- Validate the shared time zone before either device engine starts, preventing an uncaught scheduled-reboot initialization error.
+- Report invalid time zones in all four languages without starting devices or modifying existing state.
+- Includes the safe configuration rejection introduced in 1.0.2.
+
 ## 1.0.2
 
 - Catch malformed shared device lists and invalid general-device settings before initialization.

@@ -79,3 +79,24 @@ test('correcting configuration in a fresh platform instance restores the normal 
  assert.deepEqual(h.network,[]);assert.deepEqual(h.changes,[]);
  assert.equal(platform.devices.running,true);assert.equal(h.logs.filter(row=>row.level==='error').length,0);
 });
+
+
+for(const [name,timeZone,devices]of [
+ ['an unknown zone with an enabled reboot plan','Invalid/TimeZone',[{...shading,dailyReboot:{enabled:true,time:'03:00'}}]],
+ ['an unknown zone without devices','Invalid/TimeZone',[]],
+ ['an empty zone','',[]],
+ ['a non-string zone',42,[]],
+])test('invalid global time zone rejects startup for '+name,async t=>{
+ const h=await rejectSafely(t,{devices:[],shading:{timeZone,devices}});
+ assert.match(h.logs[0].message,/Ungültige Zeitzone/);
+});
+
+for(const timeZone of ['UTC','Europe/Berlin',null])test('valid or default global time zone permits empty startup: '+timeZone,async t=>{
+ const h=harness(t);let platform;
+ assert.doesNotThrow(()=>{platform=new CombinedPlatform(h.log,{devices:[],shading:{timeZone,devices:[],globalControls:false}},h.api);});
+ assert.equal(h.logs.filter(row=>row.level==='error').length,0);
+ assert.ok(h.api.listenerCount('didFinishLaunching')>0);
+ h.cleanup.push(()=>Promise.all([platform.shading.statusStore.tail,platform.devices.statusStore?.tail]));
+ assert.doesNotThrow(()=>h.api.emit('didFinishLaunching'));await platform.devices.statusStore.tail;
+ assert.equal(platform.devices.running,true);assert.deepEqual(h.network,[]);assert.deepEqual(h.changes,[]);
+});

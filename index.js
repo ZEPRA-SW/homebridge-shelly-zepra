@@ -28,6 +28,9 @@ class CombinedPlatform{
     // Reject malformed configuration before creating stores, engine callbacks or device clients.
     try{
       this.config=normalize(validateGroups(config??{}));
+      const zone=this.config.shading?.timeZone??'Europe/Berlin';
+      try{if(typeof zone!=='string'||!zone.trim())throw Error();new Intl.DateTimeFormat('en-GB',{timeZone:zone});}
+      catch{throw Error(translate('Ungültige Zeitzone. Beispiel: Europe/Berlin.',this.config.language));}
       validateDevices({...this.config,devices:this.config.devices??[]});
     }catch(error){
       const language=config?.language??config?.shading?.language??'de';

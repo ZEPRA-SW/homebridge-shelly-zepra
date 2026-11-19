@@ -51,7 +51,8 @@
     "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.",
     "Die Plugin-Konfiguration muss ein Objekt sein.": "Die Plugin-Konfiguration muss ein Objekt sein.",
     "Jeder Geräteeintrag muss ein Objekt sein.": "Jeder Geräteeintrag muss ein Objekt sein.",
-    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}"
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}",
+    "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Ungültige Zeitzone. Beispiel: Europe/Berlin."
   },
   "en": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "One bridge · separate device areas · shared cloud queue",
@@ -103,7 +104,8 @@
     "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "The Shelly ZEPRA interface could not be started.",
     "Die Plugin-Konfiguration muss ein Objekt sein.": "The plugin configuration must be an object.",
     "Jeder Geräteeintrag muss ein Objekt sein.": "Each device entry must be an object.",
-    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Invalid configuration. Shelly ZEPRA remains inactive. Correct the settings and restart the child bridge. Reason: {reason}"
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Invalid configuration. Shelly ZEPRA remains inactive. Correct the settings and restart the child bridge. Reason: {reason}",
+    "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Invalid time zone. Example: Europe/Berlin."
   },
   "fr": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "Un pont · des espaces distincts · une file cloud commune",
@@ -155,7 +157,8 @@
     "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "Impossible de démarrer l’interface Shelly ZEPRA.",
     "Die Plugin-Konfiguration muss ein Objekt sein.": "La configuration du plugin doit être un objet.",
     "Jeder Geräteeintrag muss ein Objekt sein.": "Chaque entrée d’appareil doit être un objet.",
-    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuration non valide. Shelly ZEPRA reste inactif. Corrigez les paramètres, puis redémarrez le pont enfant. Cause : {reason}"
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuration non valide. Shelly ZEPRA reste inactif. Corrigez les paramètres, puis redémarrez le pont enfant. Cause : {reason}",
+    "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Fuseau horaire non valide. Exemple : Europe/Berlin."
   },
   "es": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "Un puente · áreas de dispositivos separadas · cola de nube común",
@@ -207,7 +210,8 @@
     "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "No se pudo iniciar la interfaz de Shelly ZEPRA.",
     "Die Plugin-Konfiguration muss ein Objekt sein.": "La configuración del plugin debe ser un objeto.",
     "Jeder Geräteeintrag muss ein Objekt sein.": "Cada entrada de dispositivo debe ser un objeto.",
-    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuración no válida. Shelly ZEPRA permanece inactivo. Corrija los ajustes y reinicie el puente secundario. Motivo: {reason}"
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuración no válida. Shelly ZEPRA permanece inactivo. Corrija los ajustes y reinicie el puente secundario. Motivo: {reason}",
+    "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Zona horaria no válida. Ejemplo: Europe/Berlin."
   }
 };
  I.register('common',catalogs);return catalogs;
