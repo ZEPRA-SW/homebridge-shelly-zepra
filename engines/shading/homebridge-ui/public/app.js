@@ -105,7 +105,7 @@
         if (['orientation', 'leftAngle', 'rightAngle'].includes(key)) {
           for (const diagram of document.querySelectorAll('.sun-angle-diagram')) diagram.updateDiagram();
         }
-        if (key === 'id' && header) header.textContent = next || 'Neue ID';
+        if (key === 'id' && header) header.textContent = next || t('Neue ID');
         if (key === 'connection') {
           if (next === 'cloud' && object.dailyReboot) object.dailyReboot.enabled = false;
           renderSettings(object);
@@ -267,11 +267,12 @@
   function renderSettings(keepOpen) {
     const cfg = configuration();
     $('general-fields').replaceChildren();
-    renderFields($('general-fields'), schema.schema.properties, cfg);
+    $('general-fields').closest('details').hidden = homebridge.zepraSharedSettings === true;
+    if (!homebridge.zepraSharedSettings) renderFields($('general-fields'), schema.schema.properties, cfg);
     const root = $('settings-devices');
     root.replaceChildren();
     const definitions = schema.schema.properties.devices.items.properties;
-    const order = ['id', 'deviceType', 'name', 'connection', 'cloudServer', 'cloudKey', 'cloudDeviceId', 'host', 'shellyDeviceId', 'coverId', 'password', 'separateSlatControl',
+    const order = ['id', 'deviceType', 'name', 'homekitEnabled', 'connection', 'cloudServer', 'cloudKey', 'cloudDeviceId', 'host', 'shellyDeviceId', 'coverId', 'password', 'separateSlatControl',
       'slatName', 'windProtection', 'positionWaitTimeout', 'positionTolerance', 'sunAutomation'];
     const ordered = Object.fromEntries([...order, ...Object.keys(definitions).filter(k => !order.includes(k))]
       .filter(k => definitions[k]).map(k => [k, definitions[k]]));
@@ -311,7 +312,7 @@
       root.append(details);
     }
   }
-  const time = (stamp, zone) => new Intl.DateTimeFormat('de-DE', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(stamp));
+  const time = (stamp, zone) => new Intl.DateTimeFormat(window.RaffstoreI18n.locale(configuration()?.language), { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(stamp));
   function stat(container, label, value) {
     const node = el('div', 'stat');
     node.append(el('span', 'label', label), el('strong', '', value));
@@ -425,7 +426,7 @@
       head.append(actions);
       card.append(head, el('p', 'card-subtitle', row.id + ' · ' + t(row.deviceType === 'roller' ? 'Rollladen' : 'Raffstore') + ' · ' + t('Ausrichtung') + ' ' + row.orientation + '°'));
       const origins = { 'apple-home': 'Apple Home', solar: 'Sonnenautomatik', wind: 'Windalarm',
-        'wind-recovery': 'Windalarm-Rückfahrt', external: 'Extern (z. B. Shelly App)', unknown: 'Noch keine Steuerung erfasst' };
+        'wind-recovery': 'Windalarm-Rückfahrt', scene: 'Scene', external: 'Extern (z. B. Shelly App)', unknown: 'Noch keine Steuerung erfasst' };
       const connection = el('div', 'device-connection');
       const online = row.state?.online === true;
       const onlineDot = el('span', 'status-dot' + (online ? ' active' : ''));
@@ -439,7 +440,7 @@
         const timeline = el('div', 'timeline');
         timeline.setAttribute('role', 'img');
         timeline.setAttribute('aria-label', period.intervals.length ? t('Geplante Beschattungsperiode') + ': ' +
-          period.intervals.map(p => time(p.start, data.timeZone) + ' bis ' + time(p.end, data.timeZone)).join(', ') : t('Heute keine Beschattungsperiode'));
+          period.intervals.map(p => time(p.start, data.timeZone) + ' ' + t('bis') + ' ' + time(p.end, data.timeZone)).join(', ') : t('Heute keine Beschattungsperiode'));
         const track = el('div', 'track');
         for (const interval of period.intervals) {
           const bar = el('div', 'period');
@@ -524,14 +525,22 @@
     }
     if (next === 'overview') refresh();
   }
-  const staticTexts = new Map();
+  const staticTexts = new Map(), staticAttributes = new Map();
   function applyLanguage() {
     if (!staticTexts.size) {
       const walk = document.createTreeWalker($('raffstore-app'), NodeFilter.SHOW_TEXT);
       let node;
       while ((node = walk.nextNode())) if (node.textContent.trim()) staticTexts.set(node, node.textContent.trim());
     }
+    if (!staticAttributes.size) {
+      for (const node of $('raffstore-app').querySelectorAll('[aria-label],[title]')) {
+        staticAttributes.set(node, Object.fromEntries(['aria-label', 'title'].filter(key => node.hasAttribute(key)).map(key => [key, node.getAttribute(key)])));
+      }
+      staticAttributes.set($('raffstore-app'), { 'aria-label': $('raffstore-app').getAttribute('aria-label') });
+    }
+    document.documentElement.lang = window.RaffstoreI18n.normalizeLanguage(configuration()?.language);
     for (const [node, text] of staticTexts) if (node.isConnected) node.textContent = t(text);
+    for (const [node, attributes] of staticAttributes) if (node.isConnected) for (const [key, text] of Object.entries(attributes)) node.setAttribute(key, t(text));
   }
   async function initialize() {
     try {

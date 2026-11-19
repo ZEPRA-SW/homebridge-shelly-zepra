@@ -2,7 +2,9 @@
 
 Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebridge bridge. It provides separate device dashboards, local Scene automation and a shared queue for Shelly Cloud requests.
 
-**Current release: `1.0.0` — first public release.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
+**Your Shellys in your language: Deutsch · English · Français · Español.** The four languages cover the entire interface — device settings, live status, shading, Scenes, help texts and event history — with one shared language selection.
+
+**Version: `1.0.1` — four-language interface update.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
 
 ## Features
 
@@ -10,6 +12,7 @@ Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebrid
 - **Solar automation:** per-device orientation, independent left/right sun limits, signed start/end offsets, adjustable slat update interval and minimum change, and a configurable end position.
 - **Manual control and protection:** automatic pause, optional wind-alarm controls for blinds, global controls and restoration after a wind alarm. Height and slat commands use the existing movement queue and position feedback.
 - **Other Shelly devices:** supported relays, plugs, lights, inputs, energy meters, add-ons and BTHome readings, grouped by device model and channel.
+- **Four complete interface languages:** German, English, French and Spanish throughout all device areas and Scenes.
 - **Scenes:** nested AND/OR conditions, confirmation durations, schedules, ordered actions, delays and intermediate conditions with timeouts.
 - **One cloud queue:** both device areas share request spacing, coalesced reads and rate-limit cooldowns per cloud server/key combination.
 - **HomeKit visibility:** hide an individual device from Apple Home while retaining its plugin dashboard and configured automation.
@@ -43,7 +46,7 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
 
-The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.0.0.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.0.1.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
@@ -82,14 +85,14 @@ After adding a device, save the configuration and restart the ZEPRA child bridge
 
 ### Languages
 
-General-device views support German and English. Shading views support German, English, French and Spanish. The Scene editor and Scene messages are currently German.
+The entire custom interface supports **German, English, French and Spanish**, including general settings, both device areas, status views, Scenes, validation messages and Scene history. Choose the language once in **General settings**. Existing Scene history is translated when displayed; device identifiers, user-defined names and automation values are preserved. Save and restart the child bridge to apply the language to runtime logs and default HomeKit labels.
 
 ## Scenes
 
 A Scene has one start-condition tree and one ordered sequence of action stages. AND requires all child conditions; OR requires at least one. Groups and stages are collapsible.
 
 1. Add a Scene and select **Status**, **Value** or **Time** conditions. Choose the Shelly first, then its state or sensor reading. BTHome identifiers are retained for assignment.
-2. Use **Bedingung hinzufügen** beside **Weiter zur Aktion** to add conditions. Select UND/ODER for the group; nested groups support more complex expressions.
+2. Use **Add condition** beside **Continue to action** to add conditions. Select AND/OR for the group; nested groups support more complex expressions.
 3. Add action stages. Each stage runs its fixed delay, then its optional intermediate conditions, then its action. Intermediate conditions have a maximum wait, default 300 seconds.
 4. Choose **Off**, **Always active** or a weekday/time activation window. New Scenes are off. Save and restart the child bridge to apply configuration changes.
 
@@ -101,7 +104,7 @@ After the first command is accepted, the original trigger normally stays latched
 
 ### Optional return to the previous state
 
-Enable **Bei Rücksetzen der Bedingung vorherigen Zustand wiederherstellen** to capture original target values before the first command. Once the entire start-condition expression becomes definitively false, the Scene attempts to restore its accepted changes to those original values. This is restoration, not simply inversion. Unknown original values block the Scene from starting; missing source data does not count as a reset.
+Enable **Restore previous state when the condition resets** to capture original target values before the first command. Once the entire start-condition expression becomes definitively false, the Scene attempts to restore its accepted changes to those original values. This is restoration, not simply inversion. Unknown original values block the Scene from starting; missing source data does not count as a reset.
 
 For blinds, restoration includes height, slats and the previous automation-pause state where available. The existing motion buffer and position confirmation remain in use. Known later controls, changed targets, wind protection and recovery locks take precedence. Same-value external writes without identifiable provenance cannot always be distinguished. A partial or failed reset is recorded without automatic retries. Pending reset contexts are discarded and logged after a Homebridge restart.
 
@@ -137,8 +140,8 @@ The new ZEPRA child bridge must be paired in Apple Home. Room assignments, scene
 
 The pre-publication validation passed:
 
-- **484 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
-- **93 browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
+- **506 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
+- **140 browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
 
 Tests include real Homebridge/HAP libraries and the existing movement controller with simulated transport. They are not proof of live operation across every listed device, firmware or cloud account. Live validation of the latest Scene stages and reset behavior remains outstanding.
 

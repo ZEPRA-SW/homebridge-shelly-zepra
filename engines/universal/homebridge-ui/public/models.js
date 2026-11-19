@@ -71,14 +71,14 @@
   function profile(d){const m=get(d.modelId);return m?.profiles?.find(p=>p.id===(d.profileId||m.profiles[0].id));}
   function outputTemplates(d){const m=get(d.modelId);return profile(d)?.outputs || m?.outputs || [];}
   function inputTemplates(d){const m=get(d.modelId),a=d.addons?.[0];return [...m?.inputs||[],...(!a?[]:m?.addon==='gen1-sensor'?[{component:'extinput:0',mode:'state',addon:true}]:[a.inputId??100,...(m?.addon==='pro-sensor'?[a.inputId2??101]:[])].map(id=>({component:'input:'+id,mode:'state',addon:true})))];}
-  function sync(d,reset=false){
+  function sync(d,reset=false,language='de'){
     const m=get(d.modelId);if(!m)return;
     const channels=reset?[]:d.channels||[],ins=reset?[]:d.inputs||[];
     d.generation=m.generation;
-    d.channels=outputTemplates(d).map((c,i)=>({component:c.component,name:'Kanal '+(i+1),type:c.type,enabled:true,...channels.find(x=>x.component===c.component)}));
-    d.inputs=inputTemplates(d).map((c,i)=>({component:c.component,name:c.addon?'Add-on Eingang':'Eingang '+(i+1),mode:c.mode,enabled:false,...ins.find(x=>x.component===c.component)}));
+    d.channels=outputTemplates(d).map((c,i)=>({component:c.component,name:({de:'Kanal ',en:'Channel ',fr:'Canal ',es:'Canal '}[language]||'Kanal ')+(i+1),type:c.type,enabled:true,...channels.find(x=>x.component===c.component)}));
+    d.inputs=inputTemplates(d).map((c,i)=>({component:c.component,name:c.addon?({de:'Add-on Eingang',en:'Add-on input',fr:'Entrée du module',es:'Entrada del módulo'}[language]||'Add-on Eingang'):({de:'Eingang ',en:'Input ',fr:'Entrée ',es:'Entrada '}[language]||'Eingang ')+(i+1),mode:c.mode,enabled:false,...ins.find(x=>x.component===c.component)}));
   }
-  function select(d,id){const m=get(id);if(!m)return;d.modelId=id;delete d.thermostat;delete d.wallIlluminance;delete d.wallTemperature;delete d.wallHumidity;delete d.wallMotion;delete d.profileId;d.addons=[];d.bthome=[];d.virtualComponents=[];d.cloudSensors=m.cloudOnly===true;d.nativeSensors=false;d.energy=m.energy;sync(d,true);}
+  function select(d,id,language='de'){const m=get(id);if(!m)return;d.modelId=id;delete d.thermostat;delete d.wallIlluminance;delete d.wallTemperature;delete d.wallHumidity;delete d.wallMotion;delete d.profileId;d.addons=[];d.bthome=[];d.virtualComponents=[];d.cloudSensors=m.cloudOnly===true;d.nativeSensors=false;d.energy=m.energy;sync(d,true,language);}
   const categories=[{id:'relays',label:'Relais und Schalter'},{id:'plugs',label:'Steckdosen'},{id:'lights',label:'Licht und Dimmer'},{id:'inputs',label:'Eingänge und Taster'},{id:'meters',label:'Energiezähler'},{id:'pro',label:'Pro'},{id:'displays',label:'Displays'},{id:'sensors',label:'Sensoren (Cloud)'}];
   function functionCategory(m){if(m.cloudOnly)return 'sensors';if(m.meter)return 'meters';if(/^wall(?:-|$)/.test(m.id))return 'displays';const outputs=[...m.outputs,...(m.profiles||[]).flatMap(p=>p.outputs||[])];if(outputs.some(c=>c.type==='outlet'))return 'plugs';if(outputs.some(c=>c.type==='light'))return 'lights';if(!outputs.length&&m.inputs.length)return 'inputs';return 'relays';}
   function category(m){return m.id.startsWith('pro')?'pro':functionCategory(m);}

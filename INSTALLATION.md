@@ -17,17 +17,17 @@ Install through Homebridge UI using the npm package, or use the GitHub release a
 If the new package is not indexed in search yet, use the GitHub release archive below. On installations using `/var/lib/homebridge`, the Homebridge web terminal can also install the exact npm release:
 
 ```bash
-npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.0.0
+npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.0.1
 ```
 
 ## Install the release archive
 
-1. Download `homebridge-shelly-zepra-1.0.0.tgz` from this repository's release assets.
+1. Download `homebridge-shelly-zepra-1.0.1.tgz` from this repository's release assets.
 2. Copy that archive to `/tmp/` on the Homebridge host using your usual SSH/SFTP file transfer.
 3. In the **Homebridge web terminal** on an installation using `/var/lib/homebridge`, run:
 
    ```bash
-   npm install --prefix /var/lib/homebridge /tmp/homebridge-shelly-zepra-1.0.0.tgz
+   npm install --prefix /var/lib/homebridge /tmp/homebridge-shelly-zepra-1.0.1.tgz
    ```
 
 4. Restart Homebridge **through the Homebridge web interface**. The installation command contains no restart command.
@@ -53,15 +53,19 @@ Transfer the new release archive and repeat the installation command with its ex
 
 New accessories should appear through the existing paired bridge after a restart. Ordinary plugin updates do not require removing and pairing the bridge again. Apple Home may retain user-assigned names or room assignments independently of the plugin.
 
+## Language
+
+Select German, English, French or Spanish in **General settings**. The selection applies to both device areas, Scenes and the shared interface. Existing user names and device IDs stay unchanged. Save and restart the child bridge to apply it to runtime messages and generated HomeKit labels.
+
 ## Configuring Scenes
 
-Open **Scene**. New Scenes are off. Start conditions offer UND/ODER (AND/OR) directly; **Bedingung hinzufügen** is beside **Weiter zur Aktion**. Add conditions first, then configure the shared ordered action stages. Continue only changes the editor view and never sends a device command.
+Open **Scene**. New Scenes are off. Start conditions offer AND/OR directly; **Add condition** is beside **Continue to action** (English interface labels). Add conditions first, then configure the shared ordered action stages. Continue only changes the editor view and never sends a device command.
 
 Each stage can have a fixed delay and optional intermediate conditions with a maximum wait. The execution order is delay, intermediate conditions, action. Save and restart the child bridge when Scene configuration changes.
 
-The optional **Bei Rücksetzen der Bedingung vorherigen Zustand wiederherstellen** checkbox is off by default. It captures current original target values before the first command and attempts to restore the Scene's accepted changes after the full start expression becomes false. Missing original values prevent that Scene from starting. Recognized later changes and protective locks take precedence. Pending reset contexts are discarded and logged after a restart.
+The optional **Restore previous state when the condition resets** checkbox is off by default. It captures current original target values before the first command and attempts to restore the Scene's accepted changes after the full start expression becomes false. Missing original values prevent that Scene from starting. Recognized later changes and protective locks take precedence. Pending reset contexts are discarded and logged after a restart.
 
-The green lamp in the collapsed Scene header means its start conditions are currently fulfilled and allowed by its mode/schedule. It is gray for false, unknown, stale or disabled state. It does not confirm actuator arrival. The protocol retains the latest ten events per Scene; **Status aktualisieren** reloads it manually, and the visible Scene view also refreshes status automatically.
+The green lamp in the collapsed Scene header means its start conditions are currently fulfilled and allowed by its mode/schedule. It is gray for false, unknown, stale or disabled state. It does not confirm actuator arrival. The protocol retains the latest ten events per Scene; **Refresh status** reloads it manually, and the visible Scene view also refreshes status automatically.
 
 ## Migrating from separate plugins
 

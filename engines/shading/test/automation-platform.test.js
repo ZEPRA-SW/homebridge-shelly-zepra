@@ -700,3 +700,27 @@ test('RPC diagnostic reaches platform log and varying durations do not bypass th
     assert.equal(warnings.length, 2);
   } finally { f.handlers.shutdown(); global.fetch = original; }
 });
+
+test('localized shading accessory labels preserve configured device and switch names', async () => {
+  const { translate } = require('../lib/i18n');
+  const original = global.fetch;
+  for (const language of ['de', 'en', 'fr', 'es']) {
+    const f = harness({ name: 'Office AA-001', separateSlatControl: true, windProtection: true, sunAutomation: { enabled: true } });
+    f.config.language = language;
+    global.fetch = f.fetcher;
+    try {
+      const platform = f.create();
+      f.handlers.didFinishLaunching();
+      await platform.devices[0].initialPoll;
+      assert.equal(f.registered[0].displayName, 'Office AA-001');
+      assert.equal(f.registered[1].displayName, 'Office AA-001 ' + translate('Lamellen', language));
+      assert.equal(f.registered[2].displayName, 'Office AA-001 ' + translate('Steuerung', language));
+      const wind = f.registered[2].getServiceById('switch', 'wind');
+      assert.equal(wind.getCharacteristic(f.C.ConfiguredName).get(), translate('Windalarm', language));
+      assert.throws(() => wind.getCharacteristic(f.C.ConfiguredName).set(''), { message: translate('Ungültiger Schaltername.', language) });
+      wind.getCharacteristic(f.C.ConfiguredName).set('My custom label AA-001');
+      assert.equal(wind.getCharacteristic(f.C.ConfiguredName).get(), 'My custom label AA-001');
+      assert.equal(f.config.devices[0].name, 'Office AA-001');
+    } finally { f.handlers.shutdown?.(); global.fetch = original; }
+  }
+});

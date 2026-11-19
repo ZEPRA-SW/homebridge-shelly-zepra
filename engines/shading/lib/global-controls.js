@@ -8,7 +8,7 @@ class GlobalControls {
     accessory.context.role = 'global-controls';
     accessory.getService(api.hap.Service.AccessoryInformation)
       .setCharacteristic(api.hap.Characteristic.Manufacturer, 'Homebridge Shelly Raffstore')
-      .setCharacteristic(api.hap.Characteristic.Model, 'Global controls')
+      .setCharacteristic(api.hap.Characteristic.Model, t('Globale Steuerung'))
       .setCharacteristic(api.hap.Characteristic.SerialNumber, 'shelly-raffstore-global-controls');
     for (const [key, label, eligible, value, command] of [
       ['auto', 'Auto', d => !!d.automation, d => d.automation.enabled, (d, v) => d.setAutomation(v)],

@@ -45,3 +45,6 @@ jobs:
       - run: node test/ui-browser.cjs
         env:
           PLAYWRIGHT_CHANNEL: bundled
+      - run: node test/scenes-i18n-browser.cjs
+        env:
+          PLAYWRIGHT_CHANNEL: bundled

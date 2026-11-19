@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Complete German, English, French and Spanish language support across the shared interface, general devices and Scenes.
+- Translate existing Scene history at display time while retaining user names, IDs and automation values.
+- Fill remaining shading translations, accessibility labels, date/time formats and generated HomeKit labels.
+- Add four-language catalog and browser regression checks, including switching languages with an existing configuration.
+
 ## 1.0.0 — initial public release
 
 - Combine supported Shelly general devices and solar shading in one Homebridge bridge.

@@ -1,5 +1,6 @@
 'use strict';
 const Models=require('../homebridge-ui/public/models');
+const {translate}=require('../homebridge-ui/public/i18n');
 const {virtualDescriptors}=require('./virtual');
 const finite = v => typeof v === 'number' && Number.isFinite(v);
 const celsius = t => finite(t?.tC)?t.tC:finite(t?.tF)?(t.tF-32)*5/9:undefined;
@@ -35,6 +36,7 @@ function components(snap) {
 }
 function isCover(snap) {return snap.info.profile === 'cover' || ['roller','cover'].includes(snap.settings.mode) || Object.keys(snap.status).some(k=>k.startsWith('cover:')) || !!snap.status.rollers?.length;}
 function model(snap, config, now = Date.now()/1000) {
+  const t=text=>translate(text,config.language);
   const map = components(snap), result = [], warnings = [];
   const add=(key,type,values,extra={})=>result.push({key,type,name:extra.name || key,values:clean(values),...extra});
   const cover=isCover(snap);
@@ -95,17 +97,17 @@ function model(snap, config, now = Date.now()/1000) {
   }
   const wall=/^wall(?:-x2|-xl)?$/.test(config.modelId||'');
   if(wall)for(const [key,s] of Object.entries(map)){
-    if(key.startsWith('temperature:')&&Number(key.split(':')[1])<100&&config.modelId!=='wall-xl'&&config.wallTemperature===true){const value=celsius(s),fault=!!s.errors?.length||!finite(value)||value< -100||value>200;add(key,'temperature',fault?{}:{CurrentTemperature:value},{name:config.name+' Temperatur',fault,...(fault?{missingValues:['CurrentTemperature']}:{})});}
-    if(key.startsWith('humidity:')&&Number(key.split(':')[1])<100&&config.modelId!=='wall-xl'&&config.wallHumidity===true){const fault=!!s.errors?.length||!finite(s.rh)||s.rh<0||s.rh>100;add(key,'humidity',fault?{}:{CurrentRelativeHumidity:s.rh},{name:config.name+' Luftfeuchte',fault,...(fault?{missingValues:['CurrentRelativeHumidity']}:{})});}
-    if(key.startsWith('motion:')&&config.wallMotion===true){const fault=!!s.errors?.length||typeof s.motion!=='boolean';add(key,'motion',fault?{}:{MotionDetected:s.motion},{name:config.name+' Bewegung',fault,...(fault?{missingValues:['MotionDetected']}:{})});}
+    if(key.startsWith('temperature:')&&Number(key.split(':')[1])<100&&config.modelId!=='wall-xl'&&config.wallTemperature===true){const value=celsius(s),fault=!!s.errors?.length||!finite(value)||value< -100||value>200;add(key,'temperature',fault?{}:{CurrentTemperature:value},{name:config.name+' '+t('Temperatur'),fault,...(fault?{missingValues:['CurrentTemperature']}:{})});}
+    if(key.startsWith('humidity:')&&Number(key.split(':')[1])<100&&config.modelId!=='wall-xl'&&config.wallHumidity===true){const fault=!!s.errors?.length||!finite(s.rh)||s.rh<0||s.rh>100;add(key,'humidity',fault?{}:{CurrentRelativeHumidity:s.rh},{name:config.name+' '+t('Luftfeuchte'),fault,...(fault?{missingValues:['CurrentRelativeHumidity']}:{})});}
+    if(key.startsWith('motion:')&&config.wallMotion===true){const fault=!!s.errors?.length||typeof s.motion!=='boolean';add(key,'motion',fault?{}:{MotionDetected:s.motion},{name:config.name+' '+t('Bewegung'),fault,...(fault?{missingValues:['MotionDetected']}:{})});}
   }
-  if(wall&&config.wallIlluminance===true)for(const [key,s] of Object.entries(map))if(key.startsWith('illuminance:')&&finite(s.lux)&&s.lux>=0&&!s.errors?.length)add(key,'lux',{CurrentAmbientLightLevel:Math.max(.0001,s.lux)},{name:config.name+' Helligkeit'});
+  if(wall&&config.wallIlluminance===true)for(const [key,s] of Object.entries(map))if(key.startsWith('illuminance:')&&finite(s.lux)&&s.lux>=0&&!s.errors?.length)add(key,'lux',{CurrentAmbientLightLevel:Math.max(.0001,s.lux)},{name:config.name+' '+t('Helligkeit')});
   if(wall&&config.thermostat===true)for(const [key,s] of Object.entries(map))if(/^thermostat:\d+$/.test(key)){
     const settings=snap.settings?.[key]||{},mode=settings.type==='heating'?1:settings.type==='cooling'?2:undefined;
     if(mode===undefined){warnings.push('Thermostat ohne unterstützten Heiz-/Kühltyp: '+key);continue;}
     const invalid=s.errors?.length||!finite(s.current_C)||s.current_C< -40||s.current_C>100||!finite(s.target_C)||s.target_C<5||s.target_C>35||typeof s.enable!=='boolean'||typeof s.output!=='boolean';
     if(invalid){warnings.push('Thermostat ohne gültige Messwerte: '+key);continue;}
-    add(key,'thermostat',{CurrentTemperature:s.current_C,TargetTemperature:s.target_C,CurrentHeatingCoolingState:s.enable&&s.output?mode:0,TargetHeatingCoolingState:s.enable?mode:0,TemperatureDisplayUnits:settings.display_unit==='F'?1:0},{name:config.name+' Thermostat',control:true,mode,gen:snap.gen});
+    add(key,'thermostat',{CurrentTemperature:s.current_C,TargetTemperature:s.target_C,CurrentHeatingCoolingState:s.enable&&s.output?mode:0,TargetHeatingCoolingState:s.enable?mode:0,TemperatureDisplayUnits:settings.display_unit==='F'?1:0},{name:config.name+' '+t('Thermostat'),control:true,mode,gen:snap.gen});
   }
   if(config.energy !== false) for(const [key,s] of Object.entries(map)) {
     if(s.is_valid===false || !/^(switch|light|rgb|rgbw|cct|pm1|em1|em|meter|emeter):/.test(key)) continue;
@@ -154,7 +156,7 @@ function model(snap, config, now = Date.now()/1000) {
       descriptors.push({key:c.key,type:pair[0],name:c.config.name||c.key,values,fault});
     }
     const ds=device.status || {}, ts=ds.last_updated_ts ?? ds.last_update_ts;
-    if(finite(ds.battery) && !descriptors.some(d=>d.type==='battery')) descriptors.push({key:'battery',type:'battery',name:'Battery',values:{BatteryLevel:ds.battery,StatusLowBattery:ds.battery<=20?1:0,ChargingState:2},fault:!finite(ts)||now-ts>(b.staleAfter||86400)});
+    if(finite(ds.battery) && !descriptors.some(d=>d.type==='battery')) descriptors.push({key:'battery',type:'battery',name:t('Batterie'),values:{BatteryLevel:ds.battery,StatusLowBattery:ds.battery<=20?1:0,ChargingState:2},fault:!finite(ts)||now-ts>(b.staleAfter||86400)});
     bluetooth.push({config:b,descriptors,fault:!descriptors.length || !!ds.errors?.length});
   }
   result.push(...virtualDescriptors(snap,config,warnings));

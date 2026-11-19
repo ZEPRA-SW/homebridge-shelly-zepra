@@ -73,7 +73,7 @@ class ShellyPlatform {
           slatAccessory = this.cached.find(a => a.UUID === slatUuid);
           slatFresh = !slatAccessory || slatAccessory.context.zepraUnpublished === true;
           if(slatAccessory)delete slatAccessory.context.zepraUnpublished;
-          const slatName = device.slatName || device.name + ' Lamellen';
+          const slatName = device.slatName || device.name + ' ' + this.t('Lamellen');
           if (!slatAccessory) slatAccessory = new this.api.platformAccessory(slatName, slatUuid);
           slatAccessory.displayName = slatName;
           slatAccessory.context = { deviceId: device.id, role: 'slats' };
@@ -85,7 +85,7 @@ class ShellyPlatform {
           autoAccessory = this.cached.find(a => a.UUID === autoUuid);
           autoFresh = !autoAccessory || autoAccessory.context.zepraUnpublished === true;
           if(autoAccessory)delete autoAccessory.context.zepraUnpublished;
-          const autoName = device.name + ' Steuerung';
+          const autoName = device.name + ' ' + this.t('Steuerung');
           if (!autoAccessory) autoAccessory = new this.api.platformAccessory(autoName, autoUuid);
           autoAccessory.displayName = autoName;
           autoAccessory.context = { ...autoAccessory.context, deviceId: device.id, role: 'controls' };
@@ -146,7 +146,7 @@ class ShellyPlatform {
     let recovery;
     const info = accessory.getService(Service.AccessoryInformation);
     info.setCharacteristic(C.Manufacturer, 'Shelly')
-      .setCharacteristic(C.Model, supportsSlats ? '2PM / Raffstore' : '2PM / Rollladen')
+      .setCharacteristic(C.Model, this.t(supportsSlats ? '2PM / Raffstore' : '2PM / Rollladen'))
       .setCharacteristic(C.SerialNumber, config.id);
     const service = accessory.getService(Service.WindowCovering) ||
       accessory.addService(Service.WindowCovering, config.name);
@@ -158,10 +158,10 @@ class ShellyPlatform {
     }
     let slatService;
     if (slatAccessory) {
-      const slatName = config.slatName || config.name + ' Lamellen';
+      const slatName = config.slatName || config.name + ' ' + this.t('Lamellen');
       slatAccessory.getService(Service.AccessoryInformation)
         .setCharacteristic(C.Manufacturer, 'Shelly')
-        .setCharacteristic(C.Model, 'Lamellensteuerung')
+        .setCharacteristic(C.Model, this.t('Lamellensteuerung'))
         .setCharacteristic(C.SerialNumber, config.id + '-slats');
       slatService = slatAccessory.getService(Service.WindowCovering) ||
         slatAccessory.addService(Service.WindowCovering, slatName);
@@ -383,11 +383,11 @@ class ShellyPlatform {
     if (autoAccessory) {
       autoAccessory.getService(Service.AccessoryInformation)
         .setCharacteristic(C.Manufacturer, 'Shelly')
-        .setCharacteristic(C.Model, 'Beschattungssteuerung')
+        .setCharacteristic(C.Model, this.t('Beschattungssteuerung'))
         .setCharacteristic(C.SerialNumber, config.id + '-sun');
       autoSwitch = autoAccessory.getServiceById(Service.Switch, undefined);
       if (automation) {
-        autoSwitch = autoSwitch || autoAccessory.addService(Service.Switch, config.name + ' Automatik Beschattung');
+        autoSwitch = autoSwitch || autoAccessory.addService(Service.Switch, config.name + ' ' + this.t('Automatik Beschattung'));
         configureSwitchName(autoSwitch, 'automation', 'Auto', this.config.language ?? 'de', autoAccessory, this.api);
         autoSwitch.getCharacteristic(C.On).onGet(() => automation.enabled).onSet(setAutomation);
         autoSwitch.updateCharacteristic(C.On, automation.enabled);
@@ -396,7 +396,7 @@ class ShellyPlatform {
       }
       windSwitch = autoAccessory.getServiceById(Service.Switch, 'wind');
       if (supportsSlats && config.windProtection === true) {
-        windSwitch = windSwitch || autoAccessory.addService(Service.Switch, config.name + ' Windalarm', 'wind');
+        windSwitch = windSwitch || autoAccessory.addService(Service.Switch, config.name + ' ' + this.t('Windalarm'), 'wind');
         configureSwitchName(windSwitch, 'wind', this.t('Windalarm'), this.config.language ?? 'de', autoAccessory, this.api);
         windSwitch.getCharacteristic(C.On).onGet(() => controller.windAlarm).onSet(setWindAlarm);
         windSwitch.updateCharacteristic(C.On, controller.windAlarm);
@@ -405,7 +405,7 @@ class ShellyPlatform {
       }
       pauseSwitch = autoAccessory.getServiceById(Service.Switch, 'pause');
       if (automation) {
-        pauseSwitch = pauseSwitch || autoAccessory.addService(Service.Switch, config.name + ' Automatik Pause', 'pause');
+        pauseSwitch = pauseSwitch || autoAccessory.addService(Service.Switch, config.name + ' ' + this.t('Automatik Pause'), 'pause');
         configureSwitchName(pauseSwitch, 'pause', this.t('Automatik Pause'), this.config.language ?? 'de', autoAccessory, this.api);
         pauseSwitch.getCharacteristic(C.On).onGet(() => automation.manualPaused).onSet(setPause);
         pauseSwitch.updateCharacteristic(C.On, automation.manualPaused);

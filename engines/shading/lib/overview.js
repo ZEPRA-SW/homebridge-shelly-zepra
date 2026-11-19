@@ -45,7 +45,7 @@ class Overview {
       const poll = Math.max(device.connection === 'cloud' ? 30 : 1, Number.isFinite(config.pollInterval) ? config.pollInterval : 3);
       const stale = !Number.isFinite(state?.updatedAt) || now - state.updatedAt > Math.max(45000, poll * 4000);
       result.state = state ? {
-        lastControl: state.lastControl && ['apple-home','solar','wind','wind-recovery','external','unknown'].includes(state.lastControl.source)
+        lastControl: state.lastControl && ['apple-home','solar','wind','wind-recovery','external','scene','unknown'].includes(state.lastControl.source)
           ? { source: state.lastControl.source, at: state.lastControl.at } : null,
         online: state.online === true && !stale, recoveryDiagnostic: state.recoveryDiagnostic,
         position: state.position, slatPosition: state.slatPosition,

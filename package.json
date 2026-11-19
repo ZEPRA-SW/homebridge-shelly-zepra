@@ -1,13 +1,14 @@
 {
   "name": "homebridge-shelly-zepra",
-  "version": "1.0.0",
-  "description": "Shelly devices, solar shading and local Scene automation in one Homebridge bridge. Feedback, suggestions and bug reports: pm@zepra-app.de",
+  "version": "1.0.1",
+  "description": "Shelly ZEPRA: Shelly devices, solar shading and Scenes with a complete German, English, French and Spanish interface. Feedback, suggestions and bug reports: pm@zepra-app.de",
   "main": "index.js",
   "license": "MIT",
   "keywords": [
     "homebridge-plugin",
     "shelly",
-    "homekit"
+    "homekit",
+    "zepra"
   ],
   "engines": {
     "node": "^22.0.0 || ^24.0.0 || ^26.0.0",

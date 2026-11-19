@@ -16,11 +16,15 @@
         "type": "string",
         "enum": [
           "de",
-          "en"
+          "en",
+          "fr",
+          "es"
         ],
         "enumNames": [
           "Deutsch",
-          "English"
+          "English",
+          "Français",
+          "Español"
         ],
         "default": "de"
       },

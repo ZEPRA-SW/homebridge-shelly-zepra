@@ -1,4 +1,5 @@
 'use strict';
+const { translate } = require('./i18n');
 function configureSwitchName(service, key, defaultName, language, accessory, api) {
   const C = api.hap.Characteristic;
   const custom = accessory.context.switchNames?.[key]?.[language];
@@ -8,7 +9,7 @@ function configureSwitchName(service, key, defaultName, language, accessory, api
   if (!service.testCharacteristic(C.ConfiguredName)) service.addOptionalCharacteristic(C.ConfiguredName);
   service.updateCharacteristic(C.ConfiguredName, name);
   service.getCharacteristic(C.ConfiguredName).onGet(() => name).onSet(value => {
-    if (typeof value !== 'string' || !value.trim() || value.length > 64) throw new Error('Invalid switch name');
+    if (typeof value !== 'string' || !value.trim() || value.length > 64) throw new Error(translate('Ungültiger Schaltername.', language));
     name = value.trim();
     accessory.context.switchNames ??= {};
     accessory.context.switchNames[key] ??= {};

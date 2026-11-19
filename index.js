@@ -6,20 +6,21 @@ const {SceneEngine,SceneStore}=require('./lib/scenes');
 const sceneRuntime=require('./lib/scene-runtime');
 const {shared}=require('./lib/cloud-queue');
 const {normalize,shadingConfig}=require('./homebridge-ui/public/shared-settings');
+const {translate,logger}=require('./lib/i18n');
 const PLUGIN='homebridge-shelly-zepra',PLATFORM='ShellyZepra';
 function validateGroups(config){
-  if(config.shading!==undefined&&(!config.shading||typeof config.shading!=='object'||Array.isArray(config.shading)))throw Error('Beschattungseinstellungen müssen ein Objekt sein.');
+  if(config.shading!==undefined&&(!config.shading||typeof config.shading!=='object'||Array.isArray(config.shading)))throw Error(translate('Beschattungseinstellungen müssen ein Objekt sein.',config.language));
   const general=config.devices??[],covers=config.shading?.devices??[];
-  if(!Array.isArray(general)||!Array.isArray(covers))throw Error('Beide Gerätelisten müssen Listen sein.');
+  if(!Array.isArray(general)||!Array.isArray(covers))throw Error(translate('Beide Gerätelisten müssen Listen sein.',config.language));
   const physical=d=>String(d.connection==='cloud'?d.cloudDeviceId:d.shellyDeviceId||'').toLowerCase().replace(/:/g,'').slice(-12).padStart(12,'0');
   const known=new Set(general.map(physical).filter(Boolean));
-  for(const d of covers)if(known.has(physical(d)))throw Error('Ein Shelly darf nicht zugleich unter Beschattungen und anderen Geräten eingerichtet sein.');
-  const seen=new Set();for(const d of covers){if(d.homekitEnabled!==undefined&&typeof d.homekitEnabled!=='boolean')throw Error('In Apple Home anzeigen muss ein/aus sein.');const key=physical(d)+':'+(d.coverId??0);if(seen.has(key))throw Error('Beschattungskanal doppelt konfiguriert.');seen.add(key);}
+  for(const d of covers)if(known.has(physical(d)))throw Error(translate('Ein Shelly darf nicht zugleich unter Beschattungen und anderen Geräten eingerichtet sein.',config.language));
+  const seen=new Set();for(const d of covers){if(d.homekitEnabled!==undefined&&typeof d.homekitEnabled!=='boolean')throw Error(translate('In Apple Home anzeigen muss ein/aus sein.',config.language));const key=physical(d)+':'+(d.coverId??0);if(seen.has(key))throw Error(translate('Beschattungskanal doppelt konfiguriert.',config.language));seen.add(key);}
   return config;
 }
 class CombinedPlatform{
   constructor(log,config,api){
-    this.config=normalize(validateGroups(config??{}));this.api=api;this.log=log;this.events={universal:{},shading:{}};
+    this.config=normalize(validateGroups(config??{}));log=logger(log,this.config.language);this.api=api;this.log=log;this.events={universal:{},shading:{}};
     this.hiddenIds=new Set((this.config.shading?.devices??[]).filter(d=>d.homekitEnabled===false).map(d=>d.id));this.hiddenCached=[];
     this.hiddenStore=new HiddenAccessories(api.user?.storagePath?.(),message=>log.warn(message));
     const facade=kind=>new Proxy(api,{get:(target,key)=>{

@@ -7,13 +7,14 @@ const {model,command}=require('./lib/model');
 const {Events,eventValue}=require('./lib/events');
 const {types}=require('./lib/hap');
 const Models=require('./homebridge-ui/public/models');
+const {translate}=require('./homebridge-ui/public/i18n');
 const {StatusStore}=require('./lib/status');
 const {bthomeStatus}=require('./lib/bthome-status');
 const {RebootScheduler}=require('./lib/reboot');
 const PLUGIN='homebridge-shelly-universal', PLATFORM='ShellyUniversal';
 class Platform {
   constructor(log,config,api) {
-    this.log=log;this.config=validate(config || {});this.api=api;this.cache=new Map();this.units=new Map();this.running=false;this.types=types(api.hap);
+    this.log=log;try{this.config=validate(config || {});}catch(error){error.message=translate(error.message,config?.language);throw error;}this.api=api;this.cache=new Map();this.units=new Map();this.running=false;this.types=types(api.hap);
     api.on('didFinishLaunching',()=>this.launch());api.on('shutdown',()=>this.stop());
   }
   configureAccessory(accessory) {this.cache.set(accessory.UUID,accessory);}
@@ -23,7 +24,7 @@ class Platform {
   channelUuid(device,component) {return this.api.hap.uuid.generate(PLUGIN+':'+device.id+':channel:'+component);}
   thermostatUuid(device,component) {return this.api.hap.uuid.generate(PLUGIN+':'+device.id+':thermostat:'+component);}
   virtualUuid(device,component) {return this.api.hap.uuid.generate(PLUGIN+':'+device.id+':virtual:'+component);}
-  thermostatName(unit,component) {return unit.config.name+' Thermostat'+(component==='thermostat:0'?'':' '+(Number(component.split(':')[1])+1));}
+  thermostatName(unit,component) {return unit.config.name+' '+translate('Thermostat',this.config.language)+(component==='thermostat:0'?'':' '+(Number(component.split(':')[1])+1));}
   accessorySpecs(d) {
     if(d.homekitEnabled===false)return [];
     const thermostats=d.thermostat===true?new Set(['thermostat:0',...[...this.cache.values()].filter(a=>a.context?.deviceId===d.id&&/^thermostat:\d+$/.test(a.context.thermostatComponent||'')).map(a=>a.context.thermostatComponent)]):new Set();
@@ -55,7 +56,7 @@ class Platform {
   error() {return new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);}
   channelName(unit,component) {
     const c=unit.config.channels?.find(c=>c.component===component),name=typeof c?.name==='string'?c.name.trim():'';
-    return name&&!/^Kanal \d+$/.test(name)?name:unit.config.name+' '+(name||'Kanal '+(Number(component.split(':')[1])+1));
+    return name&&!/^Kanal \d+$/.test(name)?name:unit.config.name+' '+(name||translate('Kanal {number}',this.config.language,{number:Number(component.split(':')[1])+1}));
   }
   getRecord(unit,b,info,channel,thermostat) {
     let record=unit.accessories.find(r=>!r.virtual&&r.bluetooth?.id===b?.id&&r.channel===channel&&r.thermostat===thermostat);
@@ -260,13 +261,13 @@ class Platform {
     if(unit.busy || !this.running)return;unit.busy=true;clearTimeout(unit.timer);
     try {
       const snap=await unit.client.snapshot();if(!this.running)return;
-      const m=model(snap,unit.config);
+      const m=model(snap,{...unit.config,language:this.config.language});
       for(const warning of m.warnings) if(!unit.warnings?.has(warning)) this.log.warn(unit.config.id+': '+warning);
       unit.warnings=new Set(m.warnings);
       this.syncAccessories(unit,snap,m);
-      const statusModel=model(snap,{...unit.config,channels:(unit.config.channels||[]).map(c=>({...c,enabled:true})),inputs:(unit.config.inputs||[]).map(i=>({...i,enabled:true,mode:'state'}))});
+      const statusModel=model(snap,{...unit.config,language:this.config.language,channels:(unit.config.channels||[]).map(c=>({...c,enabled:true})),inputs:(unit.config.inputs||[]).map(i=>({...i,enabled:true,mode:'state'}))});
       unit.sceneModel=statusModel;unit.sceneCheckedAt=Date.now();unit.sceneOnline=true;
-      this.statusStore?.update(unit.config.id,true,Date.now(),powerReadings(snap,unit.config),statusModel.descriptors.filter(d=>d.type!=='energy'&&!d.fault&&Object.keys(d.values).length).map(d=>({component:d.key,name:d.name,values:d.values})),bthomeStatus(snap,statusModel));
+      this.statusStore?.update(unit.config.id,true,Date.now(),powerReadings(snap,{...unit.config,language:this.config.language}),statusModel.descriptors.filter(d=>d.type!=='energy'&&!d.fault&&Object.keys(d.values).length).map(d=>({component:d.key,name:d.name,values:d.values})),bthomeStatus(snap,statusModel));
       if(unit.failures) this.log.info(unit.config.id+': wieder erreichbar.');unit.failures=0;
       if(unit.config.homekitEnabled!==false && unit.config.connection!=='cloud' && snap.gen===2 && !unit.events && ((unit.config.inputs || []).some(i=>i.enabled!==false&&i.mode==='button') || (unit.config.bthome||[]).some(b=>b.buttonIndices?.length)||(unit.config.virtualComponents||[]).some(v=>v.enabled!==false&&v.mode==='events'))) {
         unit.events=new Events(unit.client,(event,value)=>this.event(unit,event,value),message=>this.log.warn(unit.config.id+': '+message));unit.events.start();

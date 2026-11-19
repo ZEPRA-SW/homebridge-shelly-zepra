@@ -1,7 +1,10 @@
 'use strict';
 (() => {
  const clone=value=>JSON.parse(JSON.stringify(value));
- let blocks=[],config,schema,sceneUi,tail=Promise.resolve();
+ let blocks=[],config,schema,sceneUi,activeLanguage,tail=Promise.resolve();
+ const t=text=>ZepraI18n.translate(text,config?.language);
+ function applyLanguage(){document.documentElement.lang=ZepraI18n.normalizeLanguage(config.language);for(const node of document.querySelectorAll('[data-i18n]'))node.textContent=t(node.dataset.i18n);for(const attribute of ['title','aria-label'])for(const node of document.querySelectorAll('[data-i18n-'+attribute+']'))node.setAttribute(attribute,t(node.getAttribute('data-i18n-'+attribute)));}
+ function renderGeneral(){validity.general=ZepraGeneral.render(config,schema,valid=>{validity.general=valid;dirty.devices=dirty.shading=true;if(activeLanguage!==config.language){activeLanguage=config.language;applyLanguage();sceneUi?.relabel();sceneUi?.refresh();}persist().catch(()=>{message.hidden=false;message.textContent=t('Einstellungen konnten nicht gespeichert werden.');});});}
  const dirty={devices:false,shading:false};
  const validity={devices:true,shading:true,general:true,scenes:true},ready={devices:false,shading:false};
  const message=document.getElementById('suite-message');
@@ -10,7 +13,7 @@
   const known=new Set((config.devices??[]).map(identity));
   return (config.shading?.devices??[]).some(d=>known.has(identity(d))&&identity(d)!=='000000000000');
  }
- function savedState(){const duplicate=crossError();message.hidden=!duplicate;message.textContent=duplicate?'Ein Shelly ist in beiden Bereichen konfiguriert. Bitte nur einem Bereich zuordnen.':'';
+ function savedState(){const duplicate=crossError();message.hidden=!duplicate;message.textContent=duplicate?t('Ein Shelly ist in beiden Bereichen konfiguriert. Bitte nur einem Bereich zuordnen.'):'';
   if(ready.devices&&ready.shading&&validity.devices&&validity.shading&&validity.general&&validity.scenes&&!duplicate)homebridge.enableSaveButton();else homebridge.disableSaveButton();
  }
  window.ShellyZepra={
@@ -40,7 +43,7 @@
   blocks=await homebridge.getPluginConfig();schema=await homebridge.getPluginConfigSchema();
   config=blocks.find(b=>b.platform==='ShellyZepra')??{platform:'ShellyZepra',name:'Shelly ZEPRA',devices:[],shading:{devices:[]}};
   config=ZepraSettings.normalize(config);config.devices??=[];config.shading.devices??=[];
-  validity.general=ZepraGeneral.render(config,schema,valid=>{validity.general=valid;dirty.devices=dirty.shading=true;persist().catch(()=>{message.hidden=false;message.textContent='Einstellungen konnten nicht gespeichert werden.';});});
+  activeLanguage=config.language;applyLanguage();renderGeneral();
   sceneUi=ZepraSceneUi.mount({config,request:(...args)=>homebridge.request(...args),changed:valid=>{validity.scenes=valid;persist().catch(()=>{});}});validity.scenes=sceneUi.validate();
   homebridge.disableSaveButton();
   for(const area of ['shading','devices']){
@@ -53,5 +56,5 @@
    if(['shading','devices'].includes(button.dataset.area)){if(dirty[button.dataset.area])await loadFrame(button.dataset.area);document.getElementById(button.dataset.area+'-frame').contentWindow.dispatchEvent(new Event('resize'));}
   });
  }
- homebridge.addEventListener('ready',()=>start().catch(()=>{message.hidden=false;message.textContent='Shelly ZEPRA konnte nicht geladen werden. Einstellungen bleiben im JSON-Editor erreichbar.';homebridge.showSchemaForm?.();}),{once:true});
+ homebridge.addEventListener('ready',()=>start().catch(()=>{message.hidden=false;message.textContent=t('Shelly ZEPRA konnte nicht geladen werden. Einstellungen bleiben im JSON-Editor erreichbar.');homebridge.showSchemaForm?.();}),{once:true});
 })();

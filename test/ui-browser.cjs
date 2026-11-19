@@ -133,6 +133,39 @@ const mock=`window.testSceneState={};window.testSaved=null;window.testDisabled=t
   await page.locator('#scene-list').getByLabel('Betriebsart',{exact:true}).selectOption('off');check(await page.evaluate(()=>testSaved[0].scenes[0].mode==='off'),'Scene can be disabled without deleting it');
   await page.screenshot({path:path.join(root,'.preview/zepra-scenes-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);
   check(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1),'Scene wizard fits mobile viewport');await page.screenshot({path:path.join(root,'.preview/zepra-scenes-mobile.png'),fullPage:true});
+  // Change the shared language while retaining real editor state and both embedded views.
+  await page.setViewportSize({width:1100,height:900});
+  const beforeLanguage=await page.evaluate(()=>JSON.stringify({devices:testSaved[0].devices,shading:testSaved[0].shading,scenes:testSaved[0].scenes}));
+  for(const language of ['en','fr','es','de']){
+   await page.locator('nav button[data-area="general"]').click();await page.locator('#general-language').selectOption(language);
+   check(await page.locator('html').getAttribute('lang')===language,'shared document language '+language);
+   check(await page.locator('nav button[data-area="scenes"]').textContent()===await page.evaluate(()=>ZepraI18n.translate('Scene',testSaved[0].language)),'shared Scene tab '+language);
+   check(await page.locator('label:has(#general-latitude) > span').textContent()===await page.evaluate(()=>ZepraI18n.translate('Breitengrad',testSaved[0].language)),'general fields '+language);
+   await page.evaluate(()=>{testSceneState[testSaved[0].scenes[0].id].status='Stufe 2: Bedingungen erfüllt';testSceneState[testSaved[0].scenes[0].id].events=[{timestamp:Date.now(),type:'condition-met',message:'Stufe 2: Bedingungen erfüllt'}];});
+   await page.locator('nav button[data-area="scenes"]').click();await page.locator('#scene-refresh').click();
+   const expectedStatus=await page.evaluate(()=>ZepraI18n.translate('Stufe 2: Bedingungen erfüllt',testSaved[0].language,{},'scenes'));
+   check((await page.locator('.scene-last').textContent()).includes(expectedStatus),'existing Scene state '+language);
+   check((await page.locator('.scene-protocol').textContent()).includes(expectedStatus),'existing Scene protocol '+language);
+   check(await page.locator('#scene-add').textContent()===await page.evaluate(()=>ZepraI18n.translate('Scene hinzufügen',testSaved[0].language)),'Scene add button '+language);
+   const scenePanel=await page.locator('#scenes-panel').textContent();if(language!=='de')check(!scenePanel.includes('Weiter zur Aktion')&&!scenePanel.includes('Betriebsart')&&!scenePanel.includes('Mindestabstand zwischen Auslösungen'),'Scene editor fully localized '+language);
+   await page.locator('nav button[data-area="devices"]').click();
+   const devicesFrame=page.frame({name:'devices'});await devicesFrame.locator('#show-settings').waitFor();
+   check(await devicesFrame.evaluate(()=>document.documentElement.lang)===language,'other device language forwarded '+language);
+   check(await devicesFrame.locator('#show-settings').textContent()===({de:'Geräte',en:'Devices',fr:'Appareils',es:'Dispositivos'})[language],'other device navigation '+language);
+   await page.locator('nav button[data-area="shading"]').click();const shadeFrame=page.frame({name:'shading'});await shadeFrame.locator('#tab-settings').waitFor();
+   check(await shadeFrame.evaluate(()=>document.documentElement.lang)===language,'shading language forwarded '+language);
+   check(await page.evaluate(()=>JSON.stringify({devices:testSaved[0].devices,shading:testSaved[0].shading,scenes:testSaved[0].scenes}))===beforeLanguage,'language preserves device IDs, user names, conditions and actions '+language);
+   if(language==='fr'||language==='es'){await page.locator('nav button[data-area="scenes"]').click();await page.screenshot({path:path.join(root,'.preview/zepra-scenes-'+language+'.png'),fullPage:true});}
+  }
+  await page.locator('nav button[data-area="general"]').click();await page.locator('#general-latitude').fill('');
+  await page.evaluate(()=>{const request=homebridge.request;homebridge.request=async(...args)=>{if(args[0]==='/scene-data'&&window.testSceneOffline)throw Error('simulated status outage');return request(...args);};testSceneOffline=true;});
+  await page.locator('#general-language').selectOption('fr');
+  check(await page.locator('#general-latitude').inputValue()==='','language switch preserves an empty numeric draft');
+  check(await page.evaluate(()=>testSaved[0].shading.latitude===undefined&&testDisabled),'empty required setting stays invalid through relabel');
+  await page.locator('nav button[data-area="scenes"]').click();await page.locator('#scene-refresh').click();
+  check((await page.locator('#scene-list').textContent()).includes(await page.evaluate(()=>ZepraI18n.translate('Weiter zur Aktion','fr',{},'scenes'))),'Scene labels change even when status request fails');
+  check((await page.locator('#scene-error').textContent())===await page.evaluate(()=>ZepraI18n.translate('Scene-Status konnte nicht geladen werden. Konfiguration bleibt erhalten.','fr',{},'scenes')),'status outage message follows chosen language');
+  await page.evaluate(()=>{testSceneOffline=false;});await page.locator('nav button[data-area="general"]').click();await page.locator('#general-latitude').fill('51');await page.locator('#general-language').selectOption('de');
   check(errors.length===0,JSON.stringify(errors));console.log(JSON.stringify({browserChecks:checks,errors}));
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error.stack);process.exitCode=1;});
