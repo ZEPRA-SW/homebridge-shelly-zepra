@@ -206,3 +206,19 @@ test('confirmed external on/off cycles use the configured startup level instead 
  assert.equal(p.uuid(d),p.uuid(unit.config));assert.equal(p.channelUuid(d,'switch:0'),p.channelUuid(unit.config,'switch:0'));assert.equal(p.makeClient(d).constructor.name,'CloudClient');
  unit.config=d;const snap={...rpc(),cloud:true};p.syncAccessories(unit,snap,model(snap,d));const r=unit.accessories.find(r=>r.channel==='switch:0');assert.ok(r);assert.equal(r.states.get('switch:0').cloud,true);assert.equal(r.accessory.getService(api.hap.Service.Outlet).getCharacteristic(api.hap.Characteristic.On).value,true);assert.ok(!JSON.stringify(r.accessory.context).includes('never-cache'));
 });
+
+
+test('Add-on analog HAP values are read-only, fault on missing data and recover on the same service',async t=>{
+ const d=device(),M=require('../homebridge-ui/public/models');M.select(d,'plus1');d.addons=[{type:'plus-addon',analogType:'voltage'}];M.sync(d);for(const i of d.inputs)i.enabled=true;
+ const {p,api,unit}=setup(t,{devices:[d]}),snap=rpc();snap.status['voltmeter:101']={voltage:3.25};const record=p.getRecord(unit,undefined,snap.info);p.reconcile(unit,record,model(snap,d).descriptors);
+ const service=record.accessory.getServiceById(p.types.services.analog,'su:voltmeter:101'),ch=service.getCharacteristic(p.types.chars.AnalogValue);assert.equal(await ch.handleGetRequest(),3.25);assert.equal(ch.props.unit,'V');assert.ok(!ch.props.perms.includes(api.hap.Perms.PAIRED_WRITE));assert.equal(service.getCharacteristic(api.hap.Characteristic.StatusFault).value,0);
+ snap.status['voltmeter:101'].voltage=null;p.reconcile(unit,record,model(snap,d).descriptors);await assert.rejects(ch.handleGetRequest());assert.equal(service.getCharacteristic(api.hap.Characteristic.StatusFault).value,1);
+ snap.status['voltmeter:101'].voltage=0;p.reconcile(unit,record,model(snap,d).descriptors);assert.equal(await ch.handleGetRequest(),0);assert.equal(record.accessory.getServiceById(p.types.services.analog,'su:voltmeter:101'),service);
+ d.inputs.find(i=>i.component==='voltmeter:101').enabled=false;p.reconcile(unit,record,model(snap,d).descriptors);assert.equal(record.accessory.getServiceById(p.types.services.analog,'su:voltmeter:101'),undefined);
+});
+test('poll preserves analog mode for Scenes and status while excluding failed sensor data',async t=>{
+ const d=device(),M=require('../homebridge-ui/public/models');M.select(d,'plus1');d.addons=[{type:'plus-addon',analogType:'percent'}];M.sync(d);for(const i of d.inputs)i.enabled=true;
+ const {p,unit}=setup(t,{devices:[d]}),snap=rpc(),{StatusStore}=require('../lib/status'),R=require('../../../lib/scene-runtime');snap.status['input:101']={percent:15};p.running=true;unit.client.snapshot=async()=>snap;p.statusStore=new StatusStore('',[d],10);p.statusStore.save=()=>Promise.resolve();await p.poll(unit);
+ const ref={area:'devices',deviceId:d.id,component:'input:101',metric:'AnalogValue'};assert.equal(unit.sceneModel.descriptors.find(x=>x.key==='input:101').values.AnalogValue,15);assert.equal(p.statusStore.devices.get(d.id).readings.find(x=>x.component==='input:101').unit,'%');assert.equal(R.observe({devices:p},ref).value,15);
+ snap.status['input:101'].errors=['read_error'];await p.poll(unit);assert.equal(unit.sceneModel.descriptors.find(x=>x.key==='input:101').fault,true);assert.ok(!p.statusStore.devices.get(d.id).readings.some(x=>x.component==='input:101'));assert.equal(R.observe({devices:p},ref),null);
+});

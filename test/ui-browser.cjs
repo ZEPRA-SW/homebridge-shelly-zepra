@@ -54,10 +54,20 @@ const mock=`window.testSceneState={};window.testSaved=null;window.testDisabled=t
   await devices.locator('.device-settings > summary').first().click();
   const modelSelect=devices.getByLabel('Gerätemodell',{exact:false}).first();check(await modelSelect.inputValue()==='pro4pm','existing model preserved in grouped list');
   check(await modelSelect.locator('optgroup[label="Pro / Relais und Schalter"] option[value="pro4pm"]').count()===1,'Pro relay subgroup visible');check(await modelSelect.locator('optgroup[label="Pro / Energiezähler"] option[value="pro-em"]').count()===1,'Pro energy meters separate from regular EM');check(await modelSelect.locator('optgroup[label="Energiezähler"] option[value="gen1-em"]').count()===1,'Gen1 EM is easy to find under energy meters');
+  check(await modelSelect.locator('optgroup[label="Relais und Schalter"] option[value="plus1mini"]').textContent()==='Shelly Plus 1 Mini','Plus 1 Mini is discoverable under relays');
+  check(await modelSelect.locator('optgroup[label="Pro / Energiezähler"] option[value="pro-3em"]').textContent()==='Shelly Pro 3EM','Pro 3EM has its own exact model label');
+  check(await modelSelect.locator('optgroup[label="Pro / Energiezähler"] option[value="pro-3em400"]').textContent()==='Shelly Pro 3EM-400','Pro 3EM-400 remains a separate model choice');
   await devices.getByLabel('In Apple Home anzeigen',{exact:true}).first().uncheck();
   check(await page.evaluate(()=>testSaved[0].devices[0].homekitEnabled===false),'HomeKit visibility saved independently of device polling');
   await devices.getByLabel(/^Name in Apple Home/).first().fill('Updated other device');await page.waitForTimeout(100);
   check(await page.evaluate(()=>testSaved[0].devices[0].name==='Updated other device'&&testSaved[0].shading.latitude===51&&testSaved[0].pollInterval===25),'general edit preserves shading changes');
+  await devices.locator('.device-settings > summary').first().getByRole('button',{name:'Kopieren',exact:true}).click();
+  const badCopy=devices.locator('.device-settings').nth(1),errorName='Geschlossen “: {error}';
+  await badCopy.getByLabel(/^Name in Apple Home/).fill(errorName);await badCopy.getByLabel(/^IP-Adresse/).fill('192.0.2.3');await badCopy.getByLabel(/^Shelly-Geräte-ID/).fill('invalid');
+  check(await devices.locator('#message').textContent()==='Gerät „'+errorName+'“: Shelly-Geräte-ID prüfen.','invalid second device is named without rewriting user text');check(await page.evaluate(()=>testDisabled),'named validation failure blocks saving');
+  const copyId=await badCopy.getByLabel(/^Dauerhafte eindeutige ID/).inputValue();await badCopy.getByLabel(/^Name in Apple Home/).fill('');
+  check(await devices.locator('#message').textContent()==='Gerät „'+copyId+'“: Pflichtfelder ergänzen.','unnamed device error falls back to its permanent ID');
+  await badCopy.getByRole('button',{name:'Gerät entfernen',exact:true}).click();check(await devices.locator('#message').textContent()==='','removing invalid device clears its error');
   await devices.locator('#show-overview').click();await page.screenshot({path:path.join(root,'.preview/suite-devices-desktop.png'),fullPage:true});check((await devices.locator('#overview').textContent()).includes('Updated other device'),'separate general status view');
   const contact=devices.locator('[data-component="bthomesensor:202"]'),motion=devices.locator('[data-component="bthomesensor:203"]');
   check((await contact.locator('.channel-identity strong').textContent()).includes('bthomesensor:202'),'BTHome component ID visible beside alias');
@@ -152,6 +162,12 @@ const mock=`window.testSceneState={};window.testSaved=null;window.testDisabled=t
    const devicesFrame=page.frame({name:'devices'});await devicesFrame.locator('#show-settings').waitFor();
    check(await devicesFrame.evaluate(()=>document.documentElement.lang)===language,'other device language forwarded '+language);
    check(await devicesFrame.locator('#show-settings').textContent()===({de:'Geräte',en:'Devices',fr:'Appareils',es:'Dispositivos'})[language],'other device navigation '+language);
+   await devicesFrame.locator('.device-settings').first().evaluate(n=>n.open=true);
+   const hardwareLabel=await devicesFrame.evaluate(()=>ShellyDeviceI18n.translate('Shelly-Geräte-ID',document.documentElement.lang));
+   const hardwareInput=devicesFrame.getByLabel(hardwareLabel,{exact:false}).first(),previousHardware=await hardwareInput.inputValue();await hardwareInput.fill('invalid');
+   const expectedValidation=await devicesFrame.evaluate(()=>ShellyDeviceI18n.translate('Gerät „{name}“: {error}',document.documentElement.lang,{name:'Updated other device',error:ShellyDeviceI18n.translate('Shelly-Geräte-ID prüfen.',document.documentElement.lang)}));
+   check(await devicesFrame.locator('#message').textContent()===expectedValidation,'named device error follows chosen language '+language);check(await page.evaluate(()=>testDisabled),'invalid device blocks save in '+language);
+   await hardwareInput.fill(previousHardware);check(await devicesFrame.locator('#message').textContent()==='','corrected device clears localized error '+language);
    await page.locator('nav button[data-area="shading"]').click();const shadeFrame=page.frame({name:'shading'});await shadeFrame.locator('#tab-settings').waitFor();
    check(await shadeFrame.evaluate(()=>document.documentElement.lang)===language,'shading language forwarded '+language);
    check(await page.evaluate(()=>JSON.stringify({devices:testSaved[0].devices,shading:testSaved[0].shading,scenes:testSaved[0].scenes}))===beforeLanguage,'language preserves device IDs, user names, conditions and actions '+language);
@@ -166,6 +182,14 @@ const mock=`window.testSceneState={};window.testSaved=null;window.testDisabled=t
   check((await page.locator('#scene-list').textContent()).includes(await page.evaluate(()=>ZepraI18n.translate('Weiter zur Aktion','fr',{},'scenes'))),'Scene labels change even when status request fails');
   check((await page.locator('#scene-error').textContent())===await page.evaluate(()=>ZepraI18n.translate('Scene-Status konnte nicht geladen werden. Konfiguration bleibt erhalten.','fr',{},'scenes')),'status outage message follows chosen language');
   await page.evaluate(()=>{testSceneOffline=false;});await page.locator('nav button[data-area="general"]').click();await page.locator('#general-latitude').fill('51');await page.locator('#general-language').selectOption('de');
+  await page.locator('nav button[data-area="devices"]').click();await devices.locator('#show-settings').click();await devices.locator('#add-device').click();
+  const modelCard=devices.locator('.device-settings').last();await modelCard.getByLabel(/^Dauerhafte eindeutige ID/).fill('model-selection-check');await modelCard.getByLabel(/^Name in Apple Home/).fill('Keep Model Name');await modelCard.getByLabel(/^IP-Adresse/).fill('192.0.2.30');await modelCard.getByLabel(/^Shelly-Geräte-ID/).fill('112233445577');
+  const chooseModel=modelCard.getByLabel('Gerätemodell',{exact:false});await chooseModel.selectOption('plus1mini');
+  check(await page.evaluate(()=>{const d=testSaved[0].devices.at(-1);return d.modelId==='plus1mini'&&d.channels.length===1&&d.channels[0].component==='switch:0'&&d.inputs.length===1&&d.inputs[0].component==='input:0'&&d.energy===false;}),'selecting Plus 1 Mini saves its single relay and input');
+  check(await modelCard.getByRole('button',{name:'Add-on hinzufügen',exact:true}).count()===0&&await modelCard.getByRole('button',{name:'BLU / BTHome hinzufügen',exact:true}).count()===0,'Mini does not offer unsupported expansions');
+  await page.waitForFunction(()=>!testDisabled);check(!(await page.evaluate(()=>testDisabled)),'valid Mini selection enables Save');await chooseModel.selectOption('pro-em');await page.waitForFunction(()=>!testDisabled);await modelCard.getByLabel('In Apple Home anzeigen',{exact:true}).uncheck();await page.waitForFunction(()=>!testDisabled);check(await page.evaluate(()=>testSaved[0].devices.at(-1).homekitEnabled===false&&!testDisabled),'hiding Pro EM in HomeKit keeps Save enabled');
+  for(const id of ['pro-3em','pro-3em400']){await chooseModel.selectOption(id);check(await page.evaluate(id=>{const d=testSaved[0].devices.at(-1);return d.modelId===id&&d.energy===true&&d.channels.length===0&&d.inputs.length===0&&d.id==='model-selection-check'&&d.name==='Keep Model Name'&&d.homekitEnabled===false;},id),'meter selection keeps identity and exposes no relay template '+id);check(await modelCard.locator('.power-settings').count()===1,'meter power settings visible '+id);await page.waitForFunction(()=>!testDisabled);check(!(await page.evaluate(()=>testDisabled)),'changing hidden Pro EM to selected meter leaves Save enabled '+id);}
+  await modelCard.getByRole('button',{name:'Gerät entfernen',exact:true}).click();await page.waitForFunction(()=>!testDisabled);check(await page.evaluate(()=>testSaved[0].devices.length===1&&testSaved[0].devices[0].id==='lights'),'model selection checks preserve the existing configured device');
   check(errors.length===0,JSON.stringify(errors));console.log(JSON.stringify({browserChecks:checks,errors}));
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error.stack);process.exitCode=1;});

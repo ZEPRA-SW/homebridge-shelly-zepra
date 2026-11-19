@@ -177,6 +177,7 @@ class Platform {
         const Char=chars[key];if(!Char)continue;supported.add(Char.UUID);
         const ch=service.testCharacteristic(Char)?service.getCharacteristic(Char):service.addCharacteristic(Char);
         if(d.virtual&&key==='On'){const P=this.api.hap.Perms;ch.setProps({perms:[P.PAIRED_READ,P.NOTIFY,...(d.writable===false?[]:[P.PAIRED_WRITE])]});}
+        if(key==='AnalogValue')ch.setProps({unit:d.unit==='V'?'V':'percentage',minValue:0,maxValue:d.unit==='V'?1000:100,minStep:.001});
         if(key==='CurrentTemperature') ch.setProps({minValue:-100,maxValue:200});
         if(d.type==='thermostat'&&key==='TargetTemperature')ch.setProps({minValue:5,maxValue:35,minStep:.5});
         if(d.type==='thermostat'&&key==='TargetHeatingCoolingState')ch.setProps({validValues:[0,1,2]});
@@ -230,7 +231,7 @@ class Platform {
         record.channel&&record.mergeEnergy&&key.endsWith(':energy') ||
         record.mergedEnergyKeys?.has(key) ||
         (/^(switch|relay|light|rgb|rgbw|cct|color|white):\d+$/.test(key) && !unit.config.channels?.some(c=>c.component===key&&c.enabled!==false)) ||
-        (/^(input|extinput):/.test(key) && !unit.config.inputs?.some(c=>c.component===key&&c.enabled!==false)) ||
+        (/^(input|extinput|voltmeter):/.test(key) && !unit.config.inputs?.some(c=>c.component===key&&c.enabled!==false)) ||
         (key.endsWith(':energy') && (unit.config.energy===false||energyChannel?.showEnergy===false||energyChannel?.enabled===false)) ||
         (temperatureChannel&&temperatureChannel.showTemperature!==true) ||
         (addonDisabled&&!unit.config.cloudSensors) ||
@@ -265,9 +266,9 @@ class Platform {
       for(const warning of m.warnings) if(!unit.warnings?.has(warning)) this.log.warn(unit.config.id+': '+warning);
       unit.warnings=new Set(m.warnings);
       this.syncAccessories(unit,snap,m);
-      const statusModel=model(snap,{...unit.config,language:this.config.language,channels:(unit.config.channels||[]).map(c=>({...c,enabled:true})),inputs:(unit.config.inputs||[]).map(i=>({...i,enabled:true,mode:'state'}))});
+      const statusModel=model(snap,{...unit.config,language:this.config.language,channels:(unit.config.channels||[]).map(c=>({...c,enabled:true})),inputs:(unit.config.inputs||[]).map(i=>({...i,enabled:true,mode:i.mode==='analog'?'analog':'state'}))});
       unit.sceneModel=statusModel;unit.sceneCheckedAt=Date.now();unit.sceneOnline=true;
-      this.statusStore?.update(unit.config.id,true,Date.now(),powerReadings(snap,{...unit.config,language:this.config.language}),statusModel.descriptors.filter(d=>d.type!=='energy'&&!d.fault&&Object.keys(d.values).length).map(d=>({component:d.key,name:d.name,values:d.values})),bthomeStatus(snap,statusModel));
+      this.statusStore?.update(unit.config.id,true,Date.now(),powerReadings(snap,{...unit.config,language:this.config.language}),statusModel.descriptors.filter(d=>d.type!=='energy'&&!d.fault&&Object.keys(d.values).length).map(d=>({component:d.key,name:d.name,...(d.unit?{unit:d.unit}:{}),values:d.values})),bthomeStatus(snap,statusModel));
       if(unit.failures) this.log.info(unit.config.id+': wieder erreichbar.');unit.failures=0;
       if(unit.config.homekitEnabled!==false && unit.config.connection!=='cloud' && snap.gen===2 && !unit.events && ((unit.config.inputs || []).some(i=>i.enabled!==false&&i.mode==='button') || (unit.config.bthome||[]).some(b=>b.buttonIndices?.length)||(unit.config.virtualComponents||[]).some(v=>v.enabled!==false&&v.mode==='events'))) {
         unit.events=new Events(unit.client,(event,value)=>this.event(unit,event,value),message=>this.log.warn(unit.config.id+': '+message));unit.events.start();

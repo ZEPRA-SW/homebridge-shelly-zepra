@@ -28,27 +28,30 @@
   const hint=(parent,text)=>parent.append(el('p',t(text),'hint'));
   function validation(){
     const ids=new Set(),hardware=new Set();
-    for(const d of cfg.devices||[]){
-      if(d.rebootEnabled!==undefined&&typeof d.rebootEnabled!=='boolean'||d.rebootTime!==undefined&&!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(d.rebootTime)||d.rebootEnabled===true&&!d.rebootTime)return 'Neustartzeit als HH:MM eingeben.';
-      if(d.tileMode!==undefined&&!['separate','grouped'].includes(d.tileMode))return 'HomeKit-Kacheln auswählen.';
-      if(d.modelId!==undefined&&(!M.get(d.modelId)||(M.get(d.modelId).cloudOnly&&d.connection!=='cloud')))return 'Bitte ein Shelly-Modell auswählen.';
+    const fail=(d,index,error)=>t('Gerät „{name}“: {error}',{name:[d.name,d.id].find(value=>typeof value==='string'&&value.trim())||'#'+(index+1),error:t(error)});
+    for(const [index,d] of (cfg.devices||[]).entries()){
+      if(d.rebootEnabled!==undefined&&typeof d.rebootEnabled!=='boolean'||d.rebootTime!==undefined&&!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(d.rebootTime)||d.rebootEnabled===true&&!d.rebootTime)return fail(d,index,'Neustartzeit als HH:MM eingeben.');
+      if(d.tileMode!==undefined&&!['separate','grouped'].includes(d.tileMode))return fail(d,index,'HomeKit-Kacheln auswählen.');
+      if(d.modelId!==undefined&&(!M.get(d.modelId)||(M.get(d.modelId).cloudOnly&&d.connection!=='cloud')))return fail(d,index,'Bitte ein Shelly-Modell auswählen.');
       const cloud=d.connection==='cloud';
-      if(![d.id,d.name,...(cloud?[d.cloudDeviceId,d.cloudServer,d.cloudKey]:[d.host,d.shellyDeviceId])].every(v=>typeof v==='string'&&v.trim()))return 'Pflichtfelder ergänzen.';
-      if(ids.has(d.id))return 'ID doppelt.';ids.add(d.id);
-      const hw=(cloud?d.cloudDeviceId:d.shellyDeviceId).toLowerCase().replace(/:/g,'');if(!(cloud?/^[a-f0-9]{6,12}$/:/^(?:[a-f0-9]{12}|shelly[a-z0-9-]+-[a-f0-9]{12})$/).test(hw))return 'Shelly-Geräte-ID prüfen.';
-      if(hardware.has(hw.slice(-12).replace(/^0+/,'')))return 'Shelly-Hardware doppelt.';hardware.add(hw.slice(-12).replace(/^0+/,''));
-      if(cloud){try{const u=new URL(d.cloudServer.includes('://')?d.cloudServer:'https://'+d.cloudServer);if(u.protocol!=='https:'||!/^shelly-[a-z0-9-]+\.shelly\.cloud$/.test(u.hostname)||u.port||u.username||u.password||u.pathname!=='/'||u.search||u.hash)throw 0;}catch{return 'Cloud-Serveradresse prüfen.';}if(d.rebootEnabled===true||d.thermostat===true||(d.virtualComponents||[]).some(v=>v.enabled!==false)||(d.inputs||[]).some(i=>i.enabled!==false&&i.mode==='button'))return 'Cloud: lokale Sonderfunktionen deaktivieren.';}
-      else try{const u=new URL(d.host.includes('://')?d.host:'http://'+d.host);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||u.pathname!=='/'||u.search||u.hash||!(/^(\d{1,3}\.){3}\d{1,3}$/.test(u.hostname)||u.hostname.startsWith('[')))throw 0;}catch{return 'IP-Adresse prüfen.';}
-      for(const [field,key] of [['channels','component'],['inputs','component'],['bthome','id'],['bthome','deviceComponent'],['virtualComponents','component']]){const values=(d[field]||[]).map(x=>x[key]);if(new Set(values).size!==values.length)return 'Komponente/ID doppelt.';}
-      for(const c of d.channels||[])if((c.minKelvin||2700)>=(c.maxKelvin||6500)||(c.minBrightness??0)>=(c.maxBrightness??100)||c.onBrightness!==undefined&&(c.onBrightness<(c.minBrightness??0)||c.onBrightness>(c.maxBrightness??100)))return 'Helligkeits-/Farbtemperaturgrenzen prüfen.';
-      for(const v of d.virtualComponents||[])if(!/^(boolean|button):2\d\d$/.test(v.component)||!v.name?.trim()||(v.component.startsWith('boolean:')?v.mode!=='switch':!['trigger','events'].includes(v.mode)))return 'Virtuelle Komponente prüfen.';
-      const bids=new Set();for(const b of d.bthome||[]){if(bids.has(b.id))return 'BTHome-ID doppelt.';bids.add(b.id);}
-      if(d.addons?.[0]?.inputId===d.addons?.[0]?.inputId2&&d.addons?.[0]?.inputId!==undefined)return 'Add-on-Eingangsnummern müssen verschieden sein.';
+      if(![d.id,d.name,...(cloud?[d.cloudDeviceId,d.cloudServer,d.cloudKey]:[d.host,d.shellyDeviceId])].every(v=>typeof v==='string'&&v.trim()))return fail(d,index,'Pflichtfelder ergänzen.');
+      if(ids.has(d.id))return fail(d,index,'ID doppelt.');ids.add(d.id);
+      const hw=(cloud?d.cloudDeviceId:d.shellyDeviceId).toLowerCase().replace(/:/g,'');if(!(cloud?/^[a-f0-9]{6,12}$/:/^(?:[a-f0-9]{12}|shelly[a-z0-9-]+-[a-f0-9]{12})$/).test(hw))return fail(d,index,'Shelly-Geräte-ID prüfen.');
+      if(hardware.has(hw.slice(-12).replace(/^0+/,'')))return fail(d,index,'Shelly-Hardware doppelt.');hardware.add(hw.slice(-12).replace(/^0+/,''));
+      if(cloud){try{const u=new URL(d.cloudServer.includes('://')?d.cloudServer:'https://'+d.cloudServer);if(u.protocol!=='https:'||!/^shelly-[a-z0-9-]+\.shelly\.cloud$/.test(u.hostname)||u.port||u.username||u.password||u.pathname!=='/'||u.search||u.hash)throw 0;}catch{return fail(d,index,'Cloud-Serveradresse prüfen.');}if(d.rebootEnabled===true||d.thermostat===true||(d.virtualComponents||[]).some(v=>v.enabled!==false)||(d.inputs||[]).some(i=>i.enabled!==false&&i.mode==='button'))return fail(d,index,'Cloud: lokale Sonderfunktionen deaktivieren.');}
+      else try{const u=new URL(d.host.includes('://')?d.host:'http://'+d.host);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||u.pathname!=='/'||u.search||u.hash||!(/^(\d{1,3}\.){3}\d{1,3}$/.test(u.hostname)||u.hostname.startsWith('[')))throw 0;}catch{return fail(d,index,'IP-Adresse prüfen.');}
+      for(const [field,key] of [['channels','component'],['inputs','component'],['bthome','id'],['bthome','deviceComponent'],['virtualComponents','component']]){const values=(d[field]||[]).map(x=>x[key]);if(new Set(values).size!==values.length)return fail(d,index,'Komponente/ID doppelt.');}
+      for(const c of d.channels||[])if((c.minKelvin||2700)>=(c.maxKelvin||6500)||(c.minBrightness??0)>=(c.maxBrightness??100)||c.onBrightness!==undefined&&(c.onBrightness<(c.minBrightness??0)||c.onBrightness>(c.maxBrightness??100)))return fail(d,index,'Helligkeits-/Farbtemperaturgrenzen prüfen.');
+      for(const v of d.virtualComponents||[])if(!/^(boolean|button):2\d\d$/.test(v.component)||!v.name?.trim()||(v.component.startsWith('boolean:')?v.mode!=='switch':!['trigger','events'].includes(v.mode)))return fail(d,index,'Virtuelle Komponente prüfen.');
+      const bids=new Set();for(const b of d.bthome||[]){if(bids.has(b.id))return fail(d,index,'BTHome-ID doppelt.');bids.add(b.id);}
+      if(d.addons?.[0]?.inputId===d.addons?.[0]?.inputId2&&d.addons?.[0]?.inputId!==undefined)return fail(d,index,'Add-on-Eingangsnummern müssen verschieden sein.');
     }
-    return $('settings').checkValidity()?'':'Eingaben prüfen.';
+    if($('settings').checkValidity())return '';
+    const d=$('settings').querySelector(':invalid')?.closest('.device-settings')?.shellyDevice;
+    return d?fail(d,cfg.devices.indexOf(d),'Eingaben prüfen.'):t('Eingaben prüfen.');
   }
   function changed(){
-    $('message').textContent=t(validation());homebridge.disableSaveButton();const snapshot=structuredClone(blocks),current=++revision;
+    $('message').textContent=validation();homebridge.disableSaveButton();const snapshot=structuredClone(blocks),current=++revision;
     tail=tail.catch(()=>{}).then(()=>homebridge.updatePluginConfig(snapshot)).then(()=>{if(current===revision&&!validation())homebridge.enableSaveButton();}).catch(()=>{$('message').textContent=t('Einstellungen konnten nicht übernommen werden.');homebridge.disableSaveButton();});
   }
   function fields(parent,definition,object,onChange){
@@ -93,11 +96,13 @@
     if(!d.channels?.length)hint(section,m.meter?'Reines Messgerät: Messdienste werden aus den vorhandenen Kanal-/Phasenwerten gebildet.':'Dieses Modell hat keine konfigurierten Schaltausgänge.');parent.append(section);
   }
   function inputRows(parent,d){
-    if(!d.inputs?.length)return;const group=card(t('Digitale Eingänge / i4'),'input-group');
+    if(!d.inputs?.length)return;const group=card(t('Eingänge / i4 / Add-on'),'input-group');
     for(const [i,input] of d.inputs.entries()){
-      const addon=M.inputTemplates(d).find(x=>x.component===input.component)?.addon;
-      const row=el('div',undefined,'row');row.append(el('h4',t(addon?'Add-on Eingang {number}':'Eingang {number}',{number:addon?input.component.split(':')[1]:i+1})));
-      fields(row,{properties:{enabled:def('Eingang anzeigen','boolean',{default:false}),name:def('Kanalname'),mode:d.connection==='cloud'?def('Eingangsdarstellung','string',{enum:['state'],enumNames:['Zustand (Kontaktsensor)']}):schema.schema.properties.devices.items.properties.inputs.items.properties.mode},required:['mode']},input);group.append(row);
+      const template=M.inputTemplates(d).find(x=>x.component===input.component)||{},addon=template.addon;
+      const row=el('div',undefined,'row');row.append(el('h4',t(template.analog?'Add-on Analogeingang {number}':addon?'Add-on Eingang {number}':'Eingang {number}',{number:addon?input.component.split(':')[1]:i+1})));
+      const props={enabled:def('Eingang anzeigen','boolean',{default:false}),name:def('Kanalname'),mode:template.analog?def('Eingangsdarstellung','string',{enum:['analog'],enumNames:[t(template.unit==='V'?'Spannung (V)':'Analogwert (%)')]}):d.connection==='cloud'?def('Eingangsdarstellung','string',{enum:['state'],enumNames:['Zustand (Kontaktsensor)']}):{...schema.schema.properties.devices.items.properties.inputs.items.properties.mode,enum:['state','button'],enumNames:['Zustand (Kontaktsensor)','Tastendruck (Ereignis)']}};
+      if(!template.analog&&input.mode!=='button')props.invert=def('Kontaktzustand umkehren','boolean',{default:false,description:'Tauscht Offen und Geschlossen nur im Plugin. Die Shelly-Konfiguration bleibt unverändert.'});
+      fields(row,{properties:props,required:['mode']},input,key=>{if(key==='mode'){if(input.mode!=='state')delete input.invert;render(d.id);}});group.append(row);
     }parent.append(group);
   }
   function extensions(parent,d,m){
@@ -108,7 +113,12 @@
       const props={temperature:def('Temperatur anzeigen','boolean',{default:true}),humidity:def('Luftfeuchte anzeigen','boolean',{default:true})};
       if(a.type!=='gen1-sensor')props.inputId=def('Add-on-Eingangsnummer','integer',{minimum:100,maximum:199,default:100,rebuildOnChange:true,description:'Nummer der bereits angelegten digitalen Eingangskomponente am Shelly.'});
       if(a.type==='pro-sensor')props.inputId2=def('Zweite Add-on-Eingangsnummer','integer',{minimum:100,maximum:199,default:101,rebuildOnChange:true});
-      fields(row,{properties:props},a,key=>{if(key.startsWith('inputId')){M.sync(d,false,cfg.language);render(d.id);}});
+      if(a.type!=='gen1-sensor')for(const suffix of ['',...(a.type==='pro-sensor'?['2']:[])]){
+        props['analogType'+suffix]=def(suffix?'Zweiter Analogeingang':'Analogeingang','string',{enum:['none','percent','voltage'],enumNames:['Nicht verwenden','Analogwert (%)','Spannung (V)'],default:'none',rebuildOnChange:true});
+        if(['percent','voltage'].includes(a['analogType'+suffix]))props['analogId'+suffix]=def(suffix?'Zweite Analog-Komponentennummer':'Analog-Komponentennummer','integer',{minimum:100,maximum:199,default:(a.type==='pro-sensor'?102:101)+(suffix?1:0),rebuildOnChange:true,description:'Komponentennummer am Shelly übernehmen: input für Prozentwerte, voltmeter für Spannung. Prozent- und Digitaleingänge benötigen unterschiedliche Nummern.'});
+      }
+      if(a.analogType&&a.analogType!=='none'||a.analogType2&&a.analogType2!=='none')hint(row,'Analoge Werte stehen im Status und als Scene-Bedingung zur Verfügung. Apple Home zeigt freie Analogwerte nicht an; kompatible HomeKit-Apps können sie auslesen.');
+      fields(row,{properties:props},a,key=>{if(key.startsWith('inputId')||key.startsWith('analog')){M.sync(d,false,cfg.language);render(d.id);}});
       row.append(button('Add-on entfernen',()=>{d.addons=[];M.sync(d,false,cfg.language);render(d.id);changed();}));section.append(row);
     }
     const bdef=schema.schema.properties.devices.items.properties.bthome.items;
@@ -156,6 +166,7 @@
         if(r.sensorId&&(r.fault||r.type==='button'))metric(values,r.fault?'Unbekannt':'Ereignissensor','Status','');
         if(r.kind==='sensor'&&([0,1].includes(v.ContactSensorState)||typeof v.MotionDetected==='boolean'))metric(values,signal.label,'Zustand','');
         if(Number.isFinite(v.Brightness))metric(values,v.Brightness,'Helligkeit','%');
+        if(Number.isFinite(v.AnalogValue))metric(values,v.AnalogValue,'Analogwert',r.unit==='V'?'V':'%');
         for(const [key,label,unit] of [['CurrentTemperature','Temperatur','°C'],['TargetTemperature','Sollwert','°C'],['CurrentRelativeHumidity','Luftfeuchte','%'],['CurrentAmbientLightLevel','Helligkeit','lux'],['BatteryLevel','Batterie','%']])if(Number.isFinite(v[key]))metric(values,v[key],label,unit);
         if([0,1,2].includes(v.TargetHeatingCoolingState))values.append(el('span',t(['Aus','Heizen','Kühlen'][v.TargetHeatingCoolingState]),'channel-mode'));
         for(const m of r.measurements)for(const [key,label,unit] of [['Power','Leistung','W'],['Energy','Verbrauch','kWh'],['Voltage','Spannung','V'],['Current','Strom','A'],['ReturnedEnergy','Einspeisung','kWh'],['Frequency','Frequenz','Hz'],['PowerFactor','Leistungsfaktor',''],['ApparentPower','Scheinleistung','VA'],['ReactivePower','Blindleistung','var']])if(Number.isFinite(m.values?.[key]))metric(values,m.values[key],label,unit);

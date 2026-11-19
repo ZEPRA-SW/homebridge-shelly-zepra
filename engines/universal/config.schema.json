@@ -186,7 +186,7 @@
               }
             },
             "inputs": {
-              "title": "Digitale Eingänge / i4",
+              "title": "Eingänge / i4 / Add-on",
               "type": "array",
               "items": {
                 "type": "object",
@@ -198,7 +198,7 @@
                   "component": {
                     "title": "Komponenten-ID",
                     "type": "string",
-                    "pattern": "^(input:[0-9]+|extinput:[0-9]+)$",
+                    "pattern": "^(input|extinput|voltmeter):[0-9]+$",
                     "description": "input:0 bis input:3 beim i4; RPC-Add-on z.B. input:100. Gen1-Add-on: extinput:0."
                   },
                   "name": {
@@ -210,17 +210,31 @@
                     "type": "string",
                     "enum": [
                       "state",
-                      "button"
+                      "button",
+                      "analog"
                     ],
                     "enumNames": [
                       "Zustand (Kontaktsensor)",
-                      "Taste (einfach / doppelt / lang)"
+                      "Tastendruck (Ereignis)",
+                      "Analoger Messwert"
                     ],
                     "default": "state"
                   },
                   "enabled": {
                     "type": "boolean",
                     "default": true
+                  },
+                  "invert": {
+                    "title": "Kontaktzustand umkehren",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "%",
+                      "V"
+                    ]
                   }
                 }
               }
@@ -291,6 +305,7 @@
                 "gen1-em",
                 "gen1-3em",
                 "plus1",
+                "plus1mini",
                 "plus1pm",
                 "plus2pm",
                 "plusplugs",
@@ -323,6 +338,7 @@
                 "g3-pmmini",
                 "pro-em",
                 "pro-3em",
+                "pro-3em400",
                 "g3-em",
                 "wall",
                 "wall-x2",
@@ -344,6 +360,7 @@
                 "Shelly EM (Gen1)",
                 "Shelly 3EM (Gen1)",
                 "Shelly Plus 1",
+                "Shelly Plus 1 Mini",
                 "Shelly Plus 1PM",
                 "Shelly Plus 2PM (Schalterprofil)",
                 "Shelly Plus Plug S",
@@ -375,7 +392,8 @@
                 "Shelly Plus PM Mini",
                 "Shelly PM Mini Gen3",
                 "Shelly Pro EM / Pro EM-50",
-                "Shelly Pro 3EM / 3EM-400",
+                "Shelly Pro 3EM",
+                "Shelly Pro 3EM-400",
                 "Shelly EM Gen3",
                 "Shelly Wall Display (4 Zoll)",
                 "Shelly Wall Display X2 (6,9 Zoll)",
@@ -418,6 +436,48 @@
                     "maximum": 199
                   },
                   "inputId2": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 199
+                  },
+                  "analogType": {
+                    "title": "Analogeingang",
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "percent",
+                      "voltage"
+                    ],
+                    "enumNames": [
+                      "Nicht verwenden",
+                      "Analogwert (%)",
+                      "Spannung (V)"
+                    ],
+                    "default": "none"
+                  },
+                  "analogId": {
+                    "title": "Analog-Komponentennummer",
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 199
+                  },
+                  "analogType2": {
+                    "title": "Zweiter Analogeingang",
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "percent",
+                      "voltage"
+                    ],
+                    "enumNames": [
+                      "Nicht verwenden",
+                      "Analogwert (%)",
+                      "Spannung (V)"
+                    ],
+                    "default": "none"
+                  },
+                  "analogId2": {
+                    "title": "Zweite Analog-Komponentennummer",
                     "type": "integer",
                     "minimum": 100,
                     "maximum": 199

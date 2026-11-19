@@ -48,3 +48,12 @@ jobs:
       - run: node test/scenes-i18n-browser.cjs
         env:
           PLAYWRIGHT_CHANNEL: bundled
+      - run: node test/addon-ui-browser.cjs
+        env:
+          PLAYWRIGHT_CHANNEL: bundled
+      - run: node test/addon-overview-browser.cjs
+        env:
+          PLAYWRIGHT_CHANNEL: bundled
+      - run: node test/scene-dewpoint-browser.cjs
+        env:
+          PLAYWRIGHT_CHANNEL: bundled

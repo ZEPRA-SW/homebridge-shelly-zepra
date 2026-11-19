@@ -27,6 +27,12 @@ test('formatted RPC errors translate without changing API codes, IDs or nested e
  assert.equal(I.translate('geplanter Neustart fehlgeschlagen: Shelly nicht erreichbar oder Zeitlimit überschritten.','en'),'Scheduled reboot failed: Shelly unreachable or request timed out.');
  assert.equal(I.translate('Stand: {time}','fr',{time:'10:20'}),'Mise à jour : 10:20');
 });
+test('device validation names stay literal when formatting translated errors',()=>{
+ const name='Geschlossen “: {error}',key='Gerät „{name}“: {error}';
+ for(const [language,expected] of [['de','Gerät „'+name+'“: Shelly-Geräte-ID prüfen.'],['en','Device “'+name+'”: Check hardware ID.'],['fr','Appareil « '+name+' » : Vérifier l’ID matériel.'],['es','Dispositivo «'+name+'»: Comprobar el ID de hardware.']]){
+  assert.equal(I.translate(key,language,{name,error:I.translate('Shelly-Geräte-ID prüfen.',language)}),expected);
+ }
+});
 test('new model templates use the chosen language and preserve existing explicit names',()=>{
  for(const [language,channel,input] of [['de','Kanal 1','Eingang 1'],['en','Channel 1','Input 1'],['fr','Canal 1','Entrée 1'],['es','Canal 1','Entrada 1']]){
   const d={};M.select(d,'pro4pm',language);assert.equal(d.channels[0].name,channel);assert.equal(d.inputs[0].name,input);

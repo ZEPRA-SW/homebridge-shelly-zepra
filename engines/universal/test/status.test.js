@@ -40,3 +40,11 @@ test('status endpoint exposes sanitized power and channel states and drops value
  await store.update(d.id,true,1000,[{component:'switch:0',name:'Küche',values:{Power:0,Energy:1.2,Frequency:50,cloudKey:d.cloudKey}}],[{component:'switch:0',name:'Küche',values:{On:false,Brightness:35,cloudKey:d.cloudKey}}]);const data=await readStatus(dir);assert.equal(state(data,d,1001),'online');assert.equal(data.devices[0].measurements[0].values.Power,0);assert.equal(data.devices[0].readings[0].values.On,false);assert.ok(!JSON.stringify(data).includes(d.cloudKey));
  await store.update(d.id,false,2000);const failed=await readStatus(dir);assert.deepEqual(failed.devices[0].readings,[]);assert.deepEqual(failed.devices[0].measurements,[]);
 });
+
+
+test('analog status retains numeric values and units but drops faulted and offline values',async t=>{
+ const dir=await storage(t),d=device(),store=new StatusStore(dir,[d],10);
+ await store.update(d.id,true,1000,[],[{component:'input:101',name:'Water level',unit:'%',values:{AnalogValue:0,secret:'hidden'}},{component:'voltmeter:100',name:'Voltage',unit:'V',values:{AnalogValue:4.25}},{component:'input:102',unit:'%',fault:true,values:{AnalogValue:99}}]);
+ let data=await readStatus(dir);assert.equal(data.devices[0].readings[0].unit,'%');assert.equal(data.devices[0].readings[0].values.AnalogValue,0);assert.equal(data.devices[0].readings[1].unit,'V');assert.equal(data.devices[0].readings[1].values.AnalogValue,4.25);assert.deepEqual(data.devices[0].readings[2].values,{});assert.ok(!JSON.stringify(data).includes('hidden'));
+ await store.update(d.id,false,2000);data=await readStatus(dir);assert.deepEqual(data.devices[0].readings,[]);
+});

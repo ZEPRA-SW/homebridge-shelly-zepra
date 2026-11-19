@@ -4,7 +4,7 @@ const {cloudURL,cloudId}=require('./cloud');
 const Models=require('../homebridge-ui/public/models');
 const {validateVirtual}=require('./virtual');
 const OUTPUT = /^(switch|light|rgb|rgbw|cct|relay|color|white):\d+$/;
-const INPUT = /^(input|extinput):\d+$/;
+const INPUT = /^(input|extinput|voltmeter):\d+$/;
 const normalize = value => String(value || '').toLowerCase().replace(/:/g, '');
 function hostURL(host) {
   const u = new URL(String(host).includes('://') ? host : 'http://' + host);
@@ -49,8 +49,11 @@ function validate(config) {
       if(d.channels?.some(c=>!outputs.has(c.component))||d.inputs?.some(c=>!ins.has(c.component)))throw new Error('Kanal gehört nicht zum ausgewählten Modell/Profil.');
     }
     for(const a of d.addons||[]) {
-      for(const k of ['inputId','inputId2'])if(a[k]!==undefined&&(!Number.isInteger(a[k])||a[k]<100||a[k]>199))throw new Error('Add-on-Eingangsnummer: 100..199.');
+      for(const k of ['inputId','inputId2','analogId','analogId2'])if(a[k]!==undefined&&(!Number.isInteger(a[k])||a[k]<100||a[k]>199))throw new Error('Add-on-Eingangsnummer: 100..199.');
       if(a.inputId!==undefined&&a.inputId===a.inputId2)throw new Error('Add-on-Eingangsnummern müssen unterschiedlich sein.');
+      for(const k of ['analogType','analogType2'])if(a[k]!==undefined&&!['none','percent','voltage'].includes(a[k]))throw new Error('Ungültiger Eingang.');
+      if(a.type==='gen1-sensor'&&[a.analogType,a.analogType2].some(v=>v!==undefined&&v!=='none')||a.type!=='pro-sensor'&&a.analogType2!==undefined&&a.analogType2!=='none')throw new Error('Add-on passt nicht zum ausgewählten Modell.');
+      const components=Models.inputTemplates(d).map(i=>i.component);if(new Set(components).size!==components.length)throw new Error('Add-on-Eingangsnummern müssen unterschiedlich sein.');
     }
     const unique = (items, key) => { const seen = new Set(); for (const v of items) { if (seen.has(v[key])) throw new Error('Komponente/ID doppelt.'); seen.add(v[key]); } };
     unique(d.channels || [], 'component'); unique(d.inputs || [], 'component'); unique(d.bthome || [], 'id'); unique(d.bthome || [], 'deviceComponent');
@@ -64,7 +67,11 @@ function validate(config) {
       if(c.onBrightness!==undefined&&(c.onBrightness<(c.minBrightness??0)||c.onBrightness>(c.maxBrightness??100)))throw new Error('Einschalthelligkeit außerhalb der Helligkeitsgrenzen.');
       if(c.transitionSeconds!==undefined&&(!Number.isFinite(c.transitionSeconds)||c.transitionSeconds<0||c.transitionSeconds>60))throw new Error('Übergang: 0..60 Sekunden.');
     }
-    for (const i of d.inputs || []) if (!INPUT.test(i.component) || !['state', 'button'].includes(i.mode)) throw new Error('Ungültiger Eingang.');
+    for (const i of d.inputs || []) {
+      const template=Models.inputTemplates(d).find(t=>t.component===i.component);
+      if (!INPUT.test(i.component) || !['state','button','analog'].includes(i.mode) || i.mode==='analog'&&(!template?.analog||!d.modelId||!d.addons?.length) || i.mode!=='analog'&&(i.component.startsWith('voltmeter:')||template?.analog)) throw new Error('Ungültiger Eingang.');
+      if(i.invert!==undefined&&(typeof i.invert!=='boolean'||i.invert&&i.mode!=='state'))throw new Error('Ungültiger Eingang.');
+    }
     for (const b of d.bthome || []) {
       if (typeof b.id !== 'string' || !b.id.trim() || !b.name?.trim() || !/^bthomedevice:2\d\d$/.test(b.deviceComponent)) throw new Error('BTHome benötigt eine dauerhafte ID, einen Namen und bthomedevice:200..299.');
       if(b.buttonIndices!==undefined && (!Array.isArray(b.buttonIndices) || new Set(b.buttonIndices).size!==b.buttonIndices.length || b.buttonIndices.some(i=>!Number.isInteger(i)||i<0||i>255))) throw new Error('Ungültige BTHome-Tastenindizes.');

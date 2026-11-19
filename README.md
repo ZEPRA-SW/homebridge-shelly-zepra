@@ -1,19 +1,20 @@
 # Shelly ZEPRA for Homebridge
 
-Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebridge bridge. It provides separate device dashboards, local Scene automation and a shared queue for Shelly Cloud requests.
+Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebridge bridge. It provides separate device dashboards, local Scene automation with dew-point calculation, and a shared queue for Shelly Cloud requests.
 
 **Your Shellys in your language: Deutsch · English · Français · Español.** The four languages cover the entire interface — device settings, live status, shading, Scenes, help texts and event history — with one shared language selection.
 
-**Version: `1.0.3` — configuration and time-zone validation before startup.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
+**Version: `1.1.1` — digital/analog Sensor Add-on inputs, dew-point Scene conditions and device-specific validation messages.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
 
 ## Features
 
 - **Shading:** roller shutters and Venetian blinds, separate height and slat controls, daily sun-period timelines and live position visualizations.
 - **Solar automation:** per-device orientation, independent left/right sun limits, signed start/end offsets, adjustable slat update interval and minimum change, and a configurable end position.
 - **Manual control and protection:** automatic pause, optional wind-alarm controls for blinds, global controls and restoration after a wind alarm. Height and slat commands use the existing movement queue and position feedback.
-- **Other Shelly devices:** supported relays, plugs, lights, inputs, energy meters, add-ons and BTHome readings, grouped by device model and channel.
+- **Other Shelly devices:** supported relays, plugs, lights, inputs, energy meters, add-ons and BTHome readings, grouped by device model and channel. Plus 1 Mini, Pro 3EM and Pro 3EM-400 have separate model selections.
 - **Four complete interface languages:** German, English, French and Spanish throughout all device areas and Scenes.
 - **Scenes:** nested AND/OR conditions, confirmation durations, schedules, ordered actions, delays and intermediate conditions with timeouts.
+- **Dew-point automation:** calculate dew point from selected temperature and relative-humidity readings, view the current result and use °C thresholds with hysteresis and confirmation durations in Scene conditions.
 - **One cloud queue:** both device areas share request spacing, coalesced reads and rate-limit cooldowns per cloud server/key combination.
 - **HomeKit visibility:** hide an individual device from Apple Home while retaining its plugin dashboard and configured automation.
 - **Device configuration:** collapsible cards, copying and sorting. Common settings are edited once.
@@ -46,7 +47,7 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
 
-The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.0.3.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.1.1.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
@@ -87,11 +88,17 @@ After adding a device, save the configuration and restart the ZEPRA child bridge
 
 The entire custom interface supports **German, English, French and Spanish**, including general settings, both device areas, status views, Scenes, validation messages and Scene history. Choose the language once in **General settings**. Existing Scene history is translated when displayed; device identifiers, user-defined names and automation values are preserved. Save and restart the child bridge to apply the language to runtime logs and default HomeKit labels.
 
+## Sensor Add-on inputs
+
+For supported Sensor Add-ons, enable the required digital inputs for contact switches and select the configured analog input as a percentage or voltage reading. Component numbers must match the peripherals already configured on the Shelly; the plugin does not create or rewire those peripherals. The Pro Sensor Add-on supports two separately configured analog inputs.
+
+Enabled analog inputs show their current value and unit in the device status view and can trigger Scene value conditions. Missing, faulty or stale measurements do not count as valid values. Analog measurements are read-only and use a custom HomeKit characteristic; Apple Home has no standard generic analog-value tile, so use the plugin dashboard, Scenes or a compatible HomeKit app for these readings. Live validation with the connected sensors is still required.
+
 ## Scenes
 
 A Scene has one start-condition tree and one ordered sequence of action stages. AND requires all child conditions; OR requires at least one. Groups and stages are collapsible.
 
-1. Add a Scene and select **Status**, **Value** or **Time** conditions. Choose the Shelly first, then its state or sensor reading. BTHome identifiers are retained for assignment.
+1. Add a Scene and select **Status**, **Value**, **Time** or **Dew point** conditions. Choose the Shelly first, then its state or sensor reading. BTHome identifiers are retained for assignment.
 2. Use **Add condition** beside **Continue to action** to add conditions. Select AND/OR for the group; nested groups support more complex expressions.
 3. Add action stages. Each stage runs its fixed delay, then its optional intermediate conditions, then its action. Intermediate conditions have a maximum wait, default 300 seconds.
 4. Choose **Off**, **Always active** or a weekday/time activation window. New Scenes are off. Save and restart the child bridge to apply configuration changes.
@@ -101,6 +108,12 @@ Supported actions include output on/off, light brightness, shade height/slats an
 A status/value condition with zero confirmation duration triggers on a false-to-true transition; the first fresh value after startup or a data gap is the baseline. Positive durations require a continuously matching condition and a fresh confirming reading after the duration. Hysteresis is available for numeric thresholds. Time conditions match the configured local minute and weekdays, at most once per matching clock branch and local day; missed times are not replayed.
 
 After the first command is accepted, the original trigger normally stays latched so a sequence such as light on, wait, light off can complete. Later stages may impose their own conditions. Failed stages, expired waits, activation-window expiry and shutdown stop remaining actions. Already accepted commands are not automatically retried. Waiting sequences are marked aborted after a restart and are not resumed.
+
+### Dew-point conditions
+
+Choose **Dew point** as a Scene condition, select a temperature source and a relative-humidity source, then set the comparison and dew-point threshold in °C. Both native and configured BTHome readings can be selected, with their device/sensor identifiers retained. The two readings must describe the same air; selecting unrelated locations does not yield a meaningful local dew point. A read-only preview shows the current result when both readings are valid and fresh.
+
+The calculation uses the [NPL Magnus approximation over water](https://www.npl.co.uk/resources/q-a/dew-point-and-relative-humidity), with coefficients 17.62 and 243.12. Input temperature must be between −45 and 60 °C and relative humidity must be greater than 0 and no more than 100%. This is a dew-point estimate over water, not a frost-point calculation. Missing, faulty, stale or out-of-range readings are unavailable and cannot trigger or reset a Scene. Confirmation duration requires fresh samples from both sources. Dew-point conditions also work in nested AND/OR groups and between action stages.
 
 ### Optional return to the previous state
 
@@ -140,8 +153,9 @@ The new ZEPRA child bridge must be paired in Apple Home. Room assignments, scene
 
 The pre-publication validation passed:
 
-- **530 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
-- **140 browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
+- **562 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
+- **170 combined browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
+- **70 Add-on editor checks**, plus four-language analog-status and dew-point editor/preview checks, including missing/faulty/stale samples and mobile layout.
 
 Tests include real Homebridge/HAP libraries and the existing movement controller with simulated transport. They are not proof of live operation across every listed device, firmware or cloud account. Live validation of the latest Scene stages and reset behavior remains outstanding.
 
@@ -153,7 +167,7 @@ npm test
 npm run check
 ```
 
-The additional browser suite is `node test/ui-browser.cjs`. It uses Microsoft Edge by default. For bundled Chromium, install it with `npx playwright install chromium`, set the `PLAYWRIGHT_CHANNEL` environment variable to `bundled`, then run the suite. The CI workflow uses bundled Chromium. The GitHub CI matrix additionally checks Node 22, 24 and 26 against both installed Homebridge versions. Node 22 has not been validated locally.
+The browser suites are `node test/ui-browser.cjs`, `node test/scenes-i18n-browser.cjs`, `node test/addon-ui-browser.cjs`, `node test/addon-overview-browser.cjs` and `node test/scene-dewpoint-browser.cjs`. It uses Microsoft Edge by default. For bundled Chromium, install it with `npx playwright install chromium`, set the `PLAYWRIGHT_CHANNEL` environment variable to `bundled`, then run the suite. The CI workflow uses bundled Chromium. The GitHub CI matrix additionally checks Node 22, 24 and 26 against both installed Homebridge versions. Node 22 has not been validated locally.
 
 ## Feedback, suggestions and bug reports
 

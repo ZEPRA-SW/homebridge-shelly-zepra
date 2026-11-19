@@ -32,6 +32,7 @@
     ['pro2','Shelly Pro 2',2,2,false,null,'ShellyPro2'],['pro2pm','Shelly Pro 2PM (Schalterprofil)',2,2,true,null,'ShellyPro2PM'],
     ['pro3','Shelly Pro 3',3,3,false,null,'ShellyPro3'],['pro4pm','Shelly Pro 4PM',4,4,true,null,'ShellyPro4PM']
   ])add(id,label,'rpc',ports('switch',count,id.includes('plug')?'outlet':'switch'),n,{energy,sensors:energy,addon,bthome:id.startsWith('pro'),source:rpc(2,page)});
+  add('plus1mini','Shelly Plus 1 Mini','rpc',ports('switch',1),1,{source:'https://kb.shelly.cloud/knowledge-base/shelly-plus-1-mini'});
   add('plusi4','Shelly Plus i4 / i4 DC','rpc',[],4,{source:rpc(2,'ShellyPlusI4')});
   for(const [id,label,n,page,energy] of [
     ['plus10v','Shelly Plus 0–10V Dimmer',1,'ShellyPlus10V',false],
@@ -57,7 +58,8 @@
   add('plus-pmmini','Shelly Plus PM Mini','rpc',[],0,{energy:true,meter:true,sensors:true,source:rpc(2,'ShellyPlusPMMini')});
   add('g3-pmmini','Shelly PM Mini Gen3','rpc',[],0,{energy:true,meter:true,sensors:true,bthome:true,source:rpc(3,'ShellyMiniPMG3')});
   add('pro-em','Shelly Pro EM / Pro EM-50','rpc',ports('switch',1),0,{energy:true,meter:true,bthome:true,source:rpc(2,'ShellyProEM')});
-  add('pro-3em','Shelly Pro 3EM / 3EM-400','rpc',[],0,{energy:true,meter:true,bthome:true,source:rpc(2,'ShellyPro3EM')});
+  add('pro-3em','Shelly Pro 3EM','rpc',[],0,{energy:true,meter:true,bthome:true,source:rpc(2,'ShellyPro3EM')});
+  add('pro-3em400','Shelly Pro 3EM-400','rpc',[],0,{energy:true,meter:true,bthome:true,source:rpc(2,'ShellyPro3EM')});
   add('g3-em','Shelly EM Gen3','rpc',ports('switch',1),0,{energy:true,meter:true,bthome:true,source:rpc(3,'ShellyEMG3')});
   for(const [id,label,inputsCount] of [['wall','Shelly Wall Display (4 Zoll)',1],['wall-x2','Shelly Wall Display X2 (6,9 Zoll)',1],['wall-xl','Shelly Wall Display XL (10,1 Zoll)',5]])add(id,label,'rpc',ports('switch',1),inputsCount,{sensors:true,source:'https://kb.shelly.cloud/knowledge-base/shelly-'+({wall:'wall-display','wall-x2':'wall-display-x2','wall-xl':'wall-display-xl'})[id],note:'Lokale Relais, Eingänge, optionale Sensoren und optionaler Thermostat nach Firmware. Keine Bildschirmsteuerung.'});
   add('cloud-sensor','Cloud-Sensor (Temperatur, Feuchte, Bewegung, Kontakt)','auto',[],0,{cloudOnly:true,sensors:true,source:'https://shelly-api-docs.shelly.cloud/cloud-control-api/communication-v2/'});
@@ -65,18 +67,28 @@
   const get=id=>models.find(m=>m.id===id);
   for(const id of ['plusi4','plus10v','plus-rgbw','g3-10v','g3-i4'])get(id).addon='plus-addon';
   for(const id of ['g4-1','g4-1pm','g4-2pm'])get(id).addon=null;
-  for(const id of ['pro1','pro1pm','pro2','pro2pm','pro-em','pro-3em','pro-dimmer1pm','pro-dimmer2pm','pro-10v'])get(id).addon='pro-sensor';
+  for(const id of ['pro1','pro1pm','pro2','pro2pm','pro-em','pro-3em','pro-3em400','pro-dimmer1pm','pro-dimmer2pm','pro-10v'])get(id).addon='pro-sensor';
   // EM models are available again; live power readings also appear in the plugin UI.
   const selectable=(current,connection)=>models.filter(m=>(!m.hidden||m.id===current)&&(!m.cloudOnly||connection==='cloud'||m.id===current));
   function profile(d){const m=get(d.modelId);return m?.profiles?.find(p=>p.id===(d.profileId||m.profiles[0].id));}
   function outputTemplates(d){const m=get(d.modelId);return profile(d)?.outputs || m?.outputs || [];}
-  function inputTemplates(d){const m=get(d.modelId),a=d.addons?.[0];return [...m?.inputs||[],...(!a?[]:m?.addon==='gen1-sensor'?[{component:'extinput:0',mode:'state',addon:true}]:[a.inputId??100,...(m?.addon==='pro-sensor'?[a.inputId2??101]:[])].map(id=>({component:'input:'+id,mode:'state',addon:true})))];}
+  function inputTemplates(d){
+    const m=get(d.modelId),a=d.addons?.[0],result=[...m?.inputs||[]];if(!a||!m?.addon)return result;
+    if(m.addon==='gen1-sensor')return [...result,{component:'extinput:0',mode:'state',addon:true}];
+    for(const id of [a.inputId??100,...(m.addon==='pro-sensor'?[a.inputId2??101]:[])])result.push({component:'input:'+id,mode:'state',addon:true});
+    for(const suffix of ['',...(m.addon==='pro-sensor'?['2']:[])]){const type=a['analogType'+suffix]??'none';if(['percent','voltage'].includes(type))result.push({component:(type==='voltage'?'voltmeter:':'input:')+(a['analogId'+suffix]??(m.addon==='pro-sensor'?102:101)+(suffix?1:0)),mode:'analog',addon:true,analog:true,unit:type==='voltage'?'V':'%'});}
+    return result;
+  }
   function sync(d,reset=false,language='de'){
     const m=get(d.modelId);if(!m)return;
     const channels=reset?[]:d.channels||[],ins=reset?[]:d.inputs||[];
     d.generation=m.generation;
     d.channels=outputTemplates(d).map((c,i)=>({component:c.component,name:({de:'Kanal ',en:'Channel ',fr:'Canal ',es:'Canal '}[language]||'Kanal ')+(i+1),type:c.type,enabled:true,...channels.find(x=>x.component===c.component)}));
-    d.inputs=inputTemplates(d).map((c,i)=>({component:c.component,name:c.addon?({de:'Add-on Eingang',en:'Add-on input',fr:'Entrée du module',es:'Entrada del módulo'}[language]||'Add-on Eingang'):({de:'Eingang ',en:'Input ',fr:'Entrée ',es:'Entrada '}[language]||'Eingang ')+(i+1),mode:c.mode,enabled:false,...ins.find(x=>x.component===c.component)}));
+    d.inputs=inputTemplates(d).map((c,i)=>{
+      const previous=ins.find(x=>x.component===c.component)||{},labels=c.analog?{de:'Add-on Analogeingang',en:'Add-on analog input',fr:'Entrée analogique du module',es:'Entrada analógica del módulo'}:{de:'Add-on Eingang',en:'Add-on input',fr:'Entrée du module',es:'Entrada del módulo'};
+      const input={component:c.component,name:c.addon?(labels[language]||labels.de):({de:'Eingang ',en:'Input ',fr:'Entrée ',es:'Entrada '}[language]||'Eingang ')+(i+1),mode:c.mode,enabled:false,...previous,...(c.analog?{mode:'analog',unit:c.unit}:previous.mode==='analog'?{mode:'state'}:{})};
+      if(input.mode!=='state')delete input.invert;if(!c.analog)delete input.unit;return input;
+    });
   }
   function select(d,id,language='de'){const m=get(id);if(!m)return;d.modelId=id;delete d.thermostat;delete d.wallIlluminance;delete d.wallTemperature;delete d.wallHumidity;delete d.wallMotion;delete d.profileId;d.addons=[];d.bthome=[];d.virtualComponents=[];d.cloudSensors=m.cloudOnly===true;d.nativeSensors=false;d.energy=m.energy;sync(d,true,language);}
   const categories=[{id:'relays',label:'Relais und Schalter'},{id:'plugs',label:'Steckdosen'},{id:'lights',label:'Licht und Dimmer'},{id:'inputs',label:'Eingänge und Taster'},{id:'meters',label:'Energiezähler'},{id:'pro',label:'Pro'},{id:'displays',label:'Displays'},{id:'sensors',label:'Sensoren (Cloud)'}];

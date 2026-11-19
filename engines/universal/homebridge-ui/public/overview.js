@@ -1,15 +1,15 @@
 'use strict';
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.ShellyOverview=factory();})(typeof window!=='undefined'?window:globalThis,function(){
   const output=/^(switch|relay|light|rgb|rgbw|cct|color|white):\d+$/;
-  const input=/^(input|extinput):/;
+  const input=/^(input|extinput|voltmeter):/;
   function rows(device,data,online){
     const enabledInputs=(device.inputs||[]).filter(c=>c.enabled===true),allowed=new Set(enabledInputs.map(c=>c.component));
     const readings=(online?data?.readings||[]:[]).filter(r=>(!Array.isArray(data?.bthome)||!/^bthomesensor:/.test(r.component))&&(!input.test(r.component)||allowed.has(r.component))),measurements=(online?data?.measurements||[]:[]).filter(r=>!input.test(r.component)||allowed.has(r.component)),used=new Set(),result=[];
     for(const c of [...device.channels||[],...enabledInputs]){
       const index=readings.findIndex((r,i)=>!used.has(i)&&r.component===c.component);if(index>=0)used.add(index);
-      result.push({component:c.component,name:c.name||c.component,kind:output.test(c.component)?'output':'input',values:index>=0?readings[index].values||{}:{},measurements:[]});
+      result.push({component:c.component,name:c.name||c.component,kind:output.test(c.component)?'output':'input',type:c.mode==='analog'?'analog':readings[index]?.type,unit:readings[index]?.unit||(c.mode==='analog'?(c.component.startsWith('voltmeter:')?'V':'%'):undefined),fault:readings[index]?.fault===true,values:index>=0&&!readings[index].fault?readings[index].values||{}:{},measurements:[]});
     }
-    readings.forEach((r,i)=>{if(!used.has(i))result.push({...r,kind:output.test(r.component)?'output':/^(input|extinput):/.test(r.component)?'input':'sensor',measurements:[]});});
+    readings.forEach((r,i)=>{if(!used.has(i))result.push({...r,kind:output.test(r.component)?'output':input.test(r.component)?'input':'sensor',measurements:[]});});
     for(const m of measurements){
       // Only explicitly owned meters join an output; a shared Gen1 meter stays separate.
       const owner=m.channel||m.component,r=result.find(r=>r.kind==='output'&&r.component===owner);
@@ -26,6 +26,7 @@
     if(!online||row.fault)return {state:'unknown',label:'Unbekannt'};
     if(row.type==='button')return {state:'reading',label:'Taster'};
     const v=row.values||{};
+    if(row.type==='analog')return Number.isFinite(v.AnalogValue)?{state:'reading',label:'Analogwert'}:{state:'unknown',label:'Unbekannt'};
     if(typeof v.On==='boolean')return {state:v.On?'active':'inactive',label:v.On?'Ein':'Aus'};
     if(row.kind==='input'&&[0,1].includes(v.ContactSensorState))return {state:v.ContactSensorState?'active':'inactive',label:v.ContactSensorState?'Aktiv':'Inaktiv'};
     if([0,1].includes(v.ContactSensorState))return {state:v.ContactSensorState?'active':'inactive',label:v.ContactSensorState?'Offen':'Geschlossen'};

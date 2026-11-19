@@ -2,6 +2,15 @@
 // Stable German source keys also translate saved protocol messages without altering storage.
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./i18n'));else factory(root.ZepraI18n);})(typeof window==='object'?window:globalThis,I=>{
  const rows=[
+ ["Taupunkt", "Dew point", "Point de rosée", "Punto de rocío"],
+ ["Temperaturquelle", "Temperature source", "Source de température", "Fuente de temperatura"],
+ ["Luftfeuchtequelle", "Humidity source", "Source d’humidité", "Fuente de humedad"],
+ ["Taupunktgrenze (°C)", "Dew-point threshold (°C)", "Seuil du point de rosée (°C)", "Umbral del punto de rocío (°C)"],
+ ["Berechneter Taupunkt: {value} °C", "Calculated dew point: {value} °C", "Point de rosée calculé : {value} °C", "Punto de rocío calculado: {value} °C"],
+ ["Keine aktuellen Taupunktdaten verfügbar.", "No current dew-point data available.", "Aucune donnée actuelle de point de rosée disponible.", "No hay datos actuales del punto de rocío."],
+ ["Taupunkt über Wasser nach Magnus. Temperatur und Luftfeuchte müssen dieselbe Luft beschreiben. Bereich: −45 bis 60 °C und über 0 bis 100 % relative Feuchte. Fehlende, fehlerhafte oder veraltete Werte lösen nichts aus.", "Dew point over water using Magnus. Temperature and humidity must describe the same air. Range: −45 to 60 °C and relative humidity above 0 up to 100%. Missing, faulty or stale readings do not trigger actions.", "Point de rosée sur eau selon Magnus. La température et l’humidité doivent décrire le même air. Plage : −45 à 60 °C et humidité relative supérieure à 0 jusqu’à 100 %. Les valeurs absentes, erronées ou périmées ne déclenchent aucune action.", "Punto de rocío sobre agua según Magnus. La temperatura y la humedad deben describir el mismo aire. Rango: −45 a 60 °C y humedad relativa superior a 0 hasta el 100 %. Los valores ausentes, erróneos o desactualizados no activan acciones."],
+ ["Scene: Taupunkt benötigt eine Temperatur- und eine Luftfeuchtequelle.", "Scene: dew point requires a temperature source and a humidity source.", "Scene : le point de rosée nécessite une source de température et une source d’humidité.", "Scene: el punto de rocío requiere una fuente de temperatura y una fuente de humedad."],
+ ["Analogwert","Analog value","Valeur analogique","Valor analógico"],
  [
   "Aus",
   "Off",

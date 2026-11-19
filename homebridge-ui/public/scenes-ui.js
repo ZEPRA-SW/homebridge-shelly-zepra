@@ -1,12 +1,12 @@
 'use strict';
 window.ZepraSceneUi={mount({config,request,changed}){
  const I=window.ZepraI18n,t=(text,params={})=>I.translate(text,config.language,params,'scenes'),number=value=>new Intl.NumberFormat(I.locale(config.language)).format(value),date=value=>new Date(value).toLocaleString(I.locale(config.language),{timeZone:config.shading?.timeZone||'Europe/Berlin'});
- const M=window.ZepraScenes,root=document.getElementById('scene-list'),error=document.getElementById('scene-error'),folds=new WeakMap(),summaries=new Map();let data={devices:[],states:{}},opened,liveGood=true,refreshing=false,lastError='';const live=new Map();
+ const M=window.ZepraScenes,root=document.getElementById('scene-list'),error=document.getElementById('scene-error'),folds=new WeakMap(),summaries=new Map();let data={devices:[],states:{}},opened,liveGood=true,refreshing=false,lastError='';const live=new Map(),calculations=new Map();
  config.scenes??=[];
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const ref=s=>s?Object.fromEntries(['area','deviceId','sensorId','component','metric'].filter(k=>s[k]!==undefined).map(k=>[k,s[k]])):undefined;
  const targetKey=a=>JSON.stringify([a?.area,a?.deviceId,a?.component||'',a?.property]);
- function notify(){for(const [node,fn]of summaries)node.textContent=fn();let valid=true;try{M.validate(config.scenes,config);lastError='';error.textContent='';}catch(e){valid=false;lastError=e.message;error.textContent=t(lastError);}changed(valid);}
+ function notify(){for(const fn of calculations.values())fn();for(const [node,fn]of summaries)node.textContent=fn();let valid=true;try{M.validate(config.scenes,config);lastError='';error.textContent='';}catch(e){valid=false;lastError=e.message;error.textContent=t(lastError);}changed(valid);}
  function field(parent,label,node,help){label=t(label);if(help)help=t(help);node.setAttribute('aria-label',label);const wrap=el('label');wrap.append(el('span',label),node);if(help)wrap.append(el('small',help));parent.append(wrap);return node;}
  function select(value,items,handler){const n=el('select');for(const [v,label,verbatim]of items){const o=el('option',verbatim?label:t(label));o.value=String(v);n.append(o);}n.value=String(value??'');n.addEventListener('change',()=>handler(n.value));return n;}
  function input(value,type,handler){const n=el('input');n.type=type;n.value=value??'';if(type==='number')n.step='any';n.addEventListener('input',()=>handler(type==='number'?(n.value===''?undefined:Number(n.value)):n.value));return n;}
@@ -14,9 +14,16 @@ window.ZepraSceneUi={mount({config,request,changed}){
  function weekdays(parent,object){object.days??=[0,1,2,3,4,5,6];const group=el('div',undefined,'scene-days');[1,2,3,4,5,6,0].forEach(day=>{const name=t(['So','Mo','Di','Mi','Do','Fr','Sa'][day]);const label=el('label'),box=el('input');box.type='checkbox';box.checked=object.days.includes(day);box.addEventListener('change',()=>{object.days=box.checked?[...new Set([...object.days,day])]:object.days.filter(d=>d!==day);notify();});label.append(box,el('span',name));group.append(label);});parent.append(group);}
  function valueField(parent,value,metric,handler){if(M.boolean.has(metric))return field(parent,'Gewünschter Wert',select(value===true?'true':'false',[['true',metric==='MotionDetected'?'Bewegung':'Ein / Aktiv'],['false',metric==='MotionDetected'?'Keine Bewegung':'Aus / Inaktiv']],v=>handler(v==='true')));if(metric==='ContactSensorState')return field(parent,'Kontaktzustand',select(value??1,[[0,'Geschlossen'],[1,'Offen']],v=>handler(Number(v))));return field(parent,'Wert',input(value,'number',handler));}
  function folded(object,cls,title,initial=true){const box=el('details',undefined,cls);box.open=folds.has(object)?folds.get(object):initial;const summary=el('summary',title);box.append(summary);box.addEventListener('toggle',()=>folds.set(object,box.open));return box;}
+ function sourceObservation(source,now){
+  if(!liveGood||source?.area!=='devices')return null;const device=config.devices?.find(d=>d.id===source.deviceId);if(!device)return null;
+  const expected=JSON.stringify([device.id,device.connection==='cloud'?'cloud:'+device.cloudServer:device.host,String((device.connection==='cloud'?device.cloudDeviceId:device.shellyDeviceId)||'').toLowerCase().replace(/:/g,'').slice(-12)]),row=data.devices?.find(r=>r.target===expected),maxAge=Number.isFinite(data.devicesMaxAge)?data.devicesMaxAge:30000;
+  if(!row?.online||!Number.isFinite(row.checkedAt)||now-row.checkedAt>maxAge||row.checkedAt>now+5000)return null;
+  const readings=source.sensorId?row.bthome?.find(b=>b.id===source.sensorId&&!b.fault)?.readings:row.readings,reading=readings?.find(r=>r.component===source.component&&!r.fault&&Number.isFinite(r.values?.[source.metric]));return reading?{value:reading.values[source.metric],observedAt:row.checkedAt}:null;
+ }
  function conditionText(c){
   if(c.kind==='group')return t(c.children.length===1?'{operator} · {count} Bedingung':'{operator} · {count} Bedingungen',{operator:t(c.operator==='or'?'ODER':'UND'),count:number(c.children.length)});
   if(c.kind==='time')return t('Zeit · {time}',{time:c.time||t('Uhrzeit wählen')});
+  if(c.kind==='dewpoint')return t('Taupunkt')+' · '+(c.temperatureSource?.deviceId||t('Temperaturquelle'))+' + '+(c.humiditySource?.deviceId||t('Luftfeuchtequelle'))+' '+({eq:'=',ne:'≠',gt:'>',gte:'≥',lt:'<',lte:'≤'})[c.operator]+' '+number(c.value)+' °C'+(c.holdSeconds?t(' · {seconds} s',{seconds:number(c.holdSeconds)}):'');
   const value=typeof c.value==='boolean'?t(c.value?'aktiv':'inaktiv'):c.source?.metric==='ContactSensorState'?t(c.value===0?'geschlossen':'offen'):number(c.value);
   return (c.source?.deviceId||c.sourceDevice?.deviceId||t('Shelly wählen'))+' · '+t(M.labels[c.source?.metric]||'Zustand / Wert wählen')+(c.source?' '+({eq:'=',ne:'≠',gt:'>',gte:'≥',lt:'<',lte:'≤'})[c.operator]+' '+value:'')+(c.holdSeconds?t(' · {seconds} s',{seconds:number(c.holdSeconds)}):'');
  }
@@ -44,32 +51,40 @@ window.ZepraSceneUi={mount({config,request,changed}){
     if(label.startsWith(segment+' · '))label=prefix+(addon?t('Add-on Eingang'):t(source,{number:number(ordinal)}))+label.slice(segment.length);
    }
   }
-  const suffix=labels[item[property]];return suffix&&label.endsWith(' · '+suffix)?label.slice(0,-suffix.length)+t(suffix):label;
+  const suffix=labels[item[property]],unit=item.unit?' ('+item.unit+')':'';return suffix&&label.endsWith(' · '+suffix+unit)?label.slice(0,-suffix.length-unit.length)+t(suffix)+unit:label;
  }
  function leafFields(c,scene,sources){const fields=el('div',undefined,'scene-fields');
     const deviceKey=d=>JSON.stringify([d.area,d.deviceId]);
     if(!c.sourceDevice&&c.source)c.sourceDevice={area:c.source.area,deviceId:c.source.deviceId};
     const devices=[...(config.devices||[]).map(d=>({area:'devices',deviceId:d.id,name:d.name,label:(d.name||d.id)+' ['+d.id+']'})),...(config.shading.devices||[]).map(d=>({area:'shading',deviceId:d.id,name:d.name,label:(d.name||d.id)+' ['+d.id+'] · '+t('Beschattung')}))];
-    if(c.kind!=='time'){
+    if(!['time','dewpoint'].includes(c.kind)){
      const chosen=c.sourceDevice?deviceKey(c.sourceDevice):'',items=[['','Bitte Shelly auswählen'],...devices.map(d=>[deviceKey(d),d.label,true])];if(chosen&&!devices.some(d=>deviceKey(d)===chosen))items.push([chosen,'Gespeichertes Shelly – nicht mehr vorhanden']);
      field(fields,'Quelle – Shelly',select(chosen,items,v=>{const d=devices.find(d=>deviceKey(d)===v);c.sourceDevice=d?{area:d.area,deviceId:d.deviceId}:undefined;delete c.source;c.operator='eq';c.value=c.kind==='status'?true:0;opened=scene.id;render();notify();}));
     }
-    field(fields,'Bedingungsart',select(c.kind,[['status','Status'],['time','Zeit'],['value','Wert']],v=>{c.kind=v;delete c.source;if(v!=='value')delete c.hysteresis;if(v==='time'){delete c.holdSeconds;c.time??='08:00';c.days??=[0,1,2,3,4,5,6];}else{c.value=v==='status'?true:0;c.operator='eq';}opened=scene.id;render();notify();}));
+    field(fields,'Bedingungsart',select(c.kind,[['status','Status'],['time','Zeit'],['value','Wert'],['dewpoint','Taupunkt']],v=>{c.kind=v;delete c.source;delete c.temperatureSource;delete c.humiditySource;if(!['value','dewpoint'].includes(v))delete c.hysteresis;if(v==='time'){delete c.holdSeconds;c.time??='08:00';c.days??=[0,1,2,3,4,5,6];}else{c.value=v==='status'?true:0;c.operator='eq';}opened=scene.id;render();notify();}));
     if(c.kind==='time'){field(fields,'Uhrzeit',input(c.time||'08:00','time',v=>{c.time=v;notify();}));const days=el('div',undefined,'scene-wide');days.append(el('span',t('Wochentage')));weekdays(days,c);fields.append(days);}
     else{
-     const options=sources.filter(s=>c.sourceDevice&&s.area===c.sourceDevice.area&&s.deviceId===c.sourceDevice.deviceId&&(c.kind==='status'?s.type==='boolean'||s.metric==='ContactSensorState':s.type==='number'&&s.metric!=='ContactSensorState'));
-     const current=c.source?M.key(c.source):'',device=devices.find(d=>c.sourceDevice&&deviceKey(d)===deviceKey(c.sourceDevice));
-     const short=s=>{const prefix=(device?.name||s.deviceId)+' ['+s.deviceId+']';return s.label.startsWith(prefix)?s.label.slice(prefix.length).replace(/^( \/ | · )/,''):s.label;};
-     const items=[['',c.sourceDevice?'Bitte Zustand oder Sensorwert auswählen':'Zuerst Shelly auswählen'],...options.map(s=>[s.id,short(s),true])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
-     const metric=select(current,items,v=>{const source=options.find(s=>s.id===v);c.source=ref(source);c.value=source?.type==='boolean'?true:source?.metric==='ContactSensorState'?1:0;c.operator='eq';opened=scene.id;render();notify();});metric.disabled=!c.sourceDevice;
-     field(fields,c.kind==='status'?'Zustand / Sensor':'Messwert / Sensor',metric,'Hier erscheinen nur Zustände und Sensoren des gewählten Shellys. BTHome-IDs bleiben zur Zuordnung sichtbar.');
-     if(c.source){field(fields,'Vergleich',select(c.operator||'eq',c.kind==='status'?[['eq','ist gleich'],['ne','ist ungleich']]:[['gt','größer als'],['gte','größer oder gleich'],['lt','kleiner als'],['lte','kleiner oder gleich'],['eq','ist gleich'],['ne','ist ungleich']],v=>{c.operator=v;notify();}));
-     valueField(fields,c.value,c.source?.metric,v=>{c.value=v;notify();});
-     const duration=input(c.holdSeconds??0,'number',v=>{c.holdSeconds=v;notify();});duration.min=0;duration.max=86400;duration.step=1;field(fields,'Bedingung muss erfüllt sein (Sekunden)',duration,'0 = ohne zusätzliche Bestätigungsdauer. Unterbrechungen oder fehlende Daten setzen die Dauer zurück. Nach Ablauf ist eine aktuelle Bestätigung nötig; das Statusintervall kann die Auslösung verzögern.');
-     if(c.kind==='value')field(fields,'Hysterese',input(c.hysteresis??0,'number',v=>{c.hysteresis=v;notify();}),'Abstand zur Rücksetzgrenze, in derselben Einheit wie der Messwert. Verhindert häufiges Umschalten nahe der Schwelle.');}
+     if(c.kind==='dewpoint'){
+      for(const [key,label,metric]of [['temperatureSource','Temperaturquelle','CurrentTemperature'],['humiditySource','Luftfeuchtequelle','CurrentRelativeHumidity']]){
+       const options=sources.filter(s=>s.area==='devices'&&s.metric===metric),current=c[key]?M.key(c[key]):'',items=[['','Bitte Zustand oder Sensorwert auswählen'],...options.map(s=>[s.id,s.label,true])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
+       const sourceField=field(fields,label,select(current,items,value=>{c[key]=ref(options.find(s=>s.id===value));notify();}));if(key==='temperatureSource')sourceField.parentElement.classList.add('scene-dewpoint-temperature');
+      }
+      const preview=el('p',undefined,'scene-help scene-wide scene-dewpoint-value'),update=()=>{const sample=M.observation(c,sourceObservation,Date.now());preview.textContent=sample?t('Berechneter Taupunkt: {value} °C',{value:number(sample.value)}):t('Keine aktuellen Taupunktdaten verfügbar.');};calculations.set(c,update);update();fields.append(preview,el('p',t('Taupunkt über Wasser nach Magnus. Temperatur und Luftfeuchte müssen dieselbe Luft beschreiben. Bereich: −45 bis 60 °C und über 0 bis 100 % relative Feuchte. Fehlende, fehlerhafte oder veraltete Werte lösen nichts aus.'),'scene-help scene-wide'));
+     }else{
+      const options=sources.filter(s=>c.sourceDevice&&s.area===c.sourceDevice.area&&s.deviceId===c.sourceDevice.deviceId&&(c.kind==='status'?s.type==='boolean'||s.metric==='ContactSensorState':s.type==='number'&&s.metric!=='ContactSensorState'));
+      const current=c.source?M.key(c.source):'',device=devices.find(d=>c.sourceDevice&&deviceKey(d)===deviceKey(c.sourceDevice));
+      const short=s=>{const prefix=(device?.name||s.deviceId)+' ['+s.deviceId+']';return s.label.startsWith(prefix)?s.label.slice(prefix.length).replace(/^( \/ | · )/,''):s.label;};
+      const items=[['',c.sourceDevice?'Bitte Zustand oder Sensorwert auswählen':'Zuerst Shelly auswählen'],...options.map(s=>[s.id,short(s),true])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
+      const metric=select(current,items,value=>{const source=options.find(s=>s.id===value);c.source=ref(source);c.value=source?.type==='boolean'?true:source?.metric==='ContactSensorState'?1:0;c.operator='eq';opened=scene.id;render();notify();});metric.disabled=!c.sourceDevice;
+      field(fields,c.kind==='status'?'Zustand / Sensor':'Messwert / Sensor',metric,'Hier erscheinen nur Zustände und Sensoren des gewählten Shellys. BTHome-IDs bleiben zur Zuordnung sichtbar.');
+     }
+     if(c.source||c.kind==='dewpoint'){field(fields,'Vergleich',select(c.operator||'eq',c.kind==='status'?[['eq','ist gleich'],['ne','ist ungleich']]:[['gt','größer als'],['gte','größer oder gleich'],['lt','kleiner als'],['lte','kleiner oder gleich'],['eq','ist gleich'],['ne','ist ungleich']],value=>{c.operator=value;notify();}));
+     if(c.kind==='dewpoint')field(fields,'Taupunktgrenze (°C)',input(c.value,'number',value=>{c.value=value;notify();}));else valueField(fields,c.value,c.source?.metric,value=>{c.value=value;notify();});
+     const duration=input(c.holdSeconds??0,'number',value=>{c.holdSeconds=value;notify();});duration.min=0;duration.max=86400;duration.step=1;field(fields,'Bedingung muss erfüllt sein (Sekunden)',duration,'0 = ohne zusätzliche Bestätigungsdauer. Unterbrechungen oder fehlende Daten setzen die Dauer zurück. Nach Ablauf ist eine aktuelle Bestätigung nötig; das Statusintervall kann die Auslösung verzögern.');
+     if(['value','dewpoint'].includes(c.kind))field(fields,'Hysterese',input(c.hysteresis??0,'number',value=>{c.hysteresis=value;notify();}),'Abstand zur Rücksetzgrenze, in derselben Einheit wie der Messwert. Verhindert häufiges Umschalten nahe der Schwelle.');}
     }
+ return fields;}
 
-return fields;}
  function tree(c,scene,sources,depth=0,startTree=false){
   const box=folded(c,'scene-condition-node',conditionText(c),depth===0||!c.source),title=box.querySelector('summary');summaries.set(title,()=>conditionText(c));
   if(c.kind==='group'){
@@ -85,7 +100,7 @@ return fields;}
   return box;
  }
  function render(){
-  root.replaceChildren();summaries.clear();live.clear();const sources=M.sources(config,data).map(s=>({...s,label:localizedLabel(s,M.labels,'metric')})),targets=M.targets(config).map(a=>({...a,label:localizedLabel(a,M.properties,'property')}));document.getElementById('scene-empty').hidden=config.scenes.length>0;
+  root.replaceChildren();summaries.clear();live.clear();calculations.clear();const sources=M.sources(config,data).map(s=>({...s,label:localizedLabel(s,M.labels,'metric')})),targets=M.targets(config).map(a=>({...a,label:localizedLabel(a,M.properties,'property')}));document.getElementById('scene-empty').hidden=config.scenes.length>0;
   for(const scene of config.scenes){const details=el('details',undefined,'scene-card');details.open=opened===scene.id;const summary=el('summary'),name=el('strong',scene.name),badge=el('span',t(({off:'Aus',on:'Immer aktiv',schedule:'Zeitplan'})[M.mode(scene)]),'scene-mode');const lamp=el('span',undefined,'scene-indicator');lamp.setAttribute('role','img');const identity=el('span',undefined,'scene-identity');identity.append(lamp,name);summary.append(identity,badge);details.append(summary);details.addEventListener('toggle',()=>{if(details.open)opened=scene.id;});
    const body=el('div',undefined,'scene-body'),meta=el('div',undefined,'scene-fields');field(meta,'Name der Scene',input(scene.name,'text',v=>{scene.name=v;name.textContent=v;notify();}));field(meta,'Betriebsart',select(M.mode(scene),[['off','Aus'],['on','Immer aktiv'],['schedule','Nach Zeitplan']],v=>{scene.mode=v;scene.schedule??={start:'08:00',end:'20:00',days:[0,1,2,3,4,5,6]};opened=scene.id;render();notify();}));body.append(meta);const resetLabel=el('label',undefined,'scene-reset-option'),resetBox=el('input');resetBox.type='checkbox';resetBox.checked=scene.restoreOnReset===true;resetBox.setAttribute('aria-label',t('Bei Rücksetzen der Bedingung vorherigen Zustand wiederherstellen'));resetBox.addEventListener('change',()=>{scene.restoreOnReset=resetBox.checked;notify();});resetLabel.append(resetBox,el('span',t('Bei Rücksetzen der Bedingung vorherigen Zustand wiederherstellen')));body.append(resetLabel,el('p',t('Mit Haken werden vor dem ersten Befehl die Ausgangswerte gespeichert. Sobald der gesamte Startbedingungsbaum wieder falsch ist, werden eigene Änderungen zurückgenommen. Fehlende Daten lösen keine Rücksetzung aus. Zeitbedingungen werden nach ihrer Trefferminute falsch.'),'scene-help'));
    if(M.mode(scene)==='schedule'){const plan=el('section',undefined,'scene-schedule');plan.append(el('h3',t('Aktivierungszeitplan')));const fields=el('div',undefined,'scene-fields');field(fields,'Beginn',input(scene.schedule.start,'time',v=>{scene.schedule.start=v;notify();}));field(fields,'Ende',input(scene.schedule.end,'time',v=>{scene.schedule.end=v;notify();}));plan.append(fields);weekdays(plan,scene.schedule);plan.append(el('small',t('Zeitzone: {timeZone}. Zeitfenster können über Mitternacht gehen. Der Wochentag gehört zum Beginn. Außerhalb des Fensters wird nichts nachgeholt.',{timeZone:config.shading?.timeZone||'Europe/Berlin'})));body.append(plan);}
@@ -121,7 +136,7 @@ return fields;}
   }
  }
  document.getElementById('scene-add').addEventListener('click',()=>{const id='scene-'+(window.crypto?.randomUUID?.()??Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10));config.scenes.push({id,name:t('Neue Scene'),mode:'off',condition:{kind:'group',operator:'and',children:[{kind:'status',operator:'eq',value:true}]},cooldownSeconds:60});opened=id;render();notify();});
- async function refresh(rebuild=true){if(refreshing)return;refreshing=true;try{data=await request('/scene-data');liveGood=true;if(rebuild)render();else for(const fn of live.values())fn();}catch{liveGood=false;for(const fn of live.values())fn();if(rebuild){lastError='Scene-Status konnte nicht geladen werden. Konfiguration bleibt erhalten.';error.textContent=t(lastError);}}finally{refreshing=false;}}
+ async function refresh(rebuild=true){if(refreshing)return;refreshing=true;try{data=await request('/scene-data');liveGood=true;if(rebuild)render();else{for(const fn of live.values())fn();for(const fn of calculations.values())fn();}}catch{liveGood=false;for(const fn of live.values())fn();for(const fn of calculations.values())fn();if(rebuild){lastError='Scene-Status konnte nicht geladen werden. Konfiguration bleibt erhalten.';error.textContent=t(lastError);}}finally{refreshing=false;}}
  setInterval(()=>{if(!document.hidden&&!document.getElementById('scenes-panel').hidden)refresh(false);},5000);
  document.getElementById('scene-refresh').addEventListener('click',()=>refresh());render();return {refresh,relabel(){render();error.textContent=t(lastError);},validate(){try{M.validate(config.scenes,config);return true;}catch{return false;}}};
 }};

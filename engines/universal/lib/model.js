@@ -65,12 +65,18 @@ function model(snap, config, now = Date.now()/1000) {
   }
   for(const i of config.inputs || []) {
     if(i.enabled===false)continue;
-    const s=map[i.component];
-    if(!s) {warnings.push('Eingang nicht verfügbar: '+i.component);continue;}
-    const state=s.state ?? (snap.gen===1 ? s.input : undefined);
-    if(i.mode==='button') add(i.component,'button',{}, {name:i.name || i.component, counter:s.event_cnt, event:s.event});
-    else if(typeof state==='boolean' || state===0 || state===1) add(i.component,'contact',{ContactSensorState:state?1:0},{name:i.name||i.component});
-    else warnings.push('Eingang ohne Zustand; als Taste konfigurieren: '+i.component);
+    const s=map[i.component],name=i.name||i.component,invalid=!s||s.is_valid===false||!!s.errors?.length;
+    if(i.mode==='analog') {
+      const template=Models.inputTemplates(config).find(t=>t.component===i.component&&t.analog);if(!template)continue;
+      const voltage=template.unit==='V',value=voltage?s?.voltage:s?.percent;
+      const fault=invalid||!finite(value)||value<0||value>(voltage?1000:100);
+      add(i.component,'analog',fault?{}:{AnalogValue:value},{name,unit:template.unit,fault,...(fault?{missingValues:['AnalogValue']}:{})});
+      if(fault)warnings.push('Eingang nicht verfügbar: '+i.component);continue;
+    }
+    if(i.mode==='button') {if(!invalid)add(i.component,'button',{}, {name,counter:s.event_cnt,event:s.event});else warnings.push('Eingang nicht verfügbar: '+i.component);continue;}
+    const state=s?.state ?? (snap.gen===1 ? s?.input : undefined),fault=invalid||!(typeof state==='boolean'||state===0||state===1);
+    add(i.component,'contact',fault?{}:{ContactSensorState:(!!state!==!!i.invert)?1:0},{name,fault,...(fault?{missingValues:['ContactSensorState']}:{})});
+    if(fault)warnings.push((invalid?'Eingang nicht verfügbar: ':'Eingang ohne Zustand; als Taste konfigurieren: ')+i.component);
   }
   if(config.addons?.length) for(const [key,s] of Object.entries(map)) {
       const addonSensor=/^(temperature|humidity):/.test(key) && (snap.gen===1?key!=='temperature:internal':Number(key.split(':')[1])>=100);

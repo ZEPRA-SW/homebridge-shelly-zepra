@@ -52,5 +52,24 @@ test('per-device tile mode accepts separate/grouped and rejects unknown values',
 });
 
 test('EM models are selectable again and existing configurations remain valid',()=>{
- for(const id of ['gen1-em','gen1-3em','pro-em','pro-3em','g3-em']){assert.ok(M.selectable().some(m=>m.id===id));assert.ok(M.selectable(id).some(m=>m.id===id));const d=device();M.select(d,id);assert.doesNotThrow(()=>validate({devices:[d]}));}
+ for(const id of ['gen1-em','gen1-3em','pro-em','pro-3em','pro-3em400','g3-em']){assert.ok(M.selectable().some(m=>m.id===id));assert.ok(M.selectable(id).some(m=>m.id===id));const d=device();M.select(d,id);assert.doesNotThrow(()=>validate({devices:[d]}));}
+});
+
+test('Plus 1 Mini exposes its relay and configured contact without borrowing metering or expansion capabilities',()=>{
+ const d=device(),identity={id:d.id,name:d.name,host:d.host,shellyDeviceId:d.shellyDeviceId};M.select(d,'plus1mini');d.inputs[0].enabled=true;
+ const snap=rpc();snap.info={...snap.info,id:'shellyplus1mini-aabbccddeeff',app:'Plus1Mini'};snap.status['input:0'].state=false;
+ assert.doesNotThrow(()=>validate({devices:[d]}));const result=model(snap,d),relay=result.descriptors.find(x=>x.key==='switch:0'),contact=result.descriptors.find(x=>x.key==='input:0');
+ assert.deepEqual(relay.values,{On:true});assert.deepEqual(command(relay,'On',false),{on:false});assert.deepEqual(contact.values,{ContactSensorState:0});
+ assert.deepEqual(result.descriptors.map(x=>x.key).sort(),['input:0','switch:0']);assert.equal(d.energy,false);assert.deepEqual({id:d.id,name:d.name,host:d.host,shellyDeviceId:d.shellyDeviceId},identity);
+ assert.throws(()=>validate({devices:[{...d,addons:[{type:'plus-addon'}]}]}),/Add-on/);assert.throws(()=>validate({devices:[{...d,bthome:[{id:'blu',name:'Unsupported sensor',deviceComponent:'bthomedevice:200'}]}]}),/BTHome/);
+});
+test('separate Pro 3EM selections expose all measured phases and preserve existing pro-3em configurations',()=>{
+ const snap=rpc();snap.info.app='Pro3EM';snap.status={'em:0':{a_act_power:-50,a_voltage:231,a_current:.3,b_act_power:0,b_voltage:230,b_current:0,c_act_power:100,c_voltage:229,c_current:.5,total_act_power:50,total_current:.8},'emdata:0':{a_total_act_energy:1000,a_total_act_ret_energy:10,b_total_act_energy:0,c_total_act_energy:3000,total_act:4000}};
+ for(const id of ['pro-3em','pro-3em400']){
+  const d=device();M.select(d,id);assert.doesNotThrow(()=>validate({devices:[d]}));const result=model(snap,d);assert.ok(!result.descriptors.some(x=>x.output));
+  assert.deepEqual(result.descriptors.map(x=>x.key).sort(),['em:0:A:energy','em:0:B:energy','em:0:C:energy','em:0:total:energy']);
+  assert.deepEqual(result.descriptors.find(x=>x.key==='em:0:A:energy').values,{Power:-50,Voltage:231,Current:.3,Energy:1,ReturnedEnergy:.01});assert.equal(result.descriptors.find(x=>x.key==='em:0:B:energy').values.Energy,0);assert.equal(result.descriptors.find(x=>x.key==='em:0:total:energy').values.Energy,4);
+  assert.throws(()=>validate({devices:[{...d,channels:[{component:'switch:0',type:'switch'}]}]}),/Kanal/);
+ }
+ const existing={...device(),modelId:'pro-3em',generation:'rpc',channels:[],inputs:[],energy:true,addons:[]},before=structuredClone(existing);M.sync(existing);assert.doesNotThrow(()=>validate({devices:[existing]}));assert.deepEqual(existing,before);
 });
