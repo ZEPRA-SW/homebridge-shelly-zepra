@@ -4,7 +4,7 @@ Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebrid
 
 **Your Shellys in your language: Deutsch · English · Français · Español.** The four languages cover the entire interface — device settings, live status, shading, Scenes, help texts and event history — with one shared language selection.
 
-**Version: `1.0.1` — four-language interface update.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
+**Version: `1.0.2` — safe handling of invalid configuration.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
 
 ## Features
 
@@ -46,7 +46,7 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
 
-The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.0.1.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.0.2.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
@@ -140,7 +140,7 @@ The new ZEPRA child bridge must be paired in Apple Home. Room assignments, scene
 
 The pre-publication validation passed:
 
-- **506 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
+- **523 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
 - **140 browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
 
 Tests include real Homebridge/HAP libraries and the existing movement controller with simulated transport. They are not proof of live operation across every listed device, firmware or cloud account. Live validation of the latest Scene stages and reset behavior remains outstanding.

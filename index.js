@@ -7,11 +7,15 @@ const sceneRuntime=require('./lib/scene-runtime');
 const {shared}=require('./lib/cloud-queue');
 const {normalize,shadingConfig}=require('./homebridge-ui/public/shared-settings');
 const {translate,logger}=require('./lib/i18n');
+const {validate:validateDevices}=require('./engines/universal/lib/config');
+const {translate:format}=require('./homebridge-ui/public/i18n');
 const PLUGIN='homebridge-shelly-zepra',PLATFORM='ShellyZepra';
 function validateGroups(config){
+  if(!config||typeof config!=='object'||Array.isArray(config))throw Error(translate('Die Plugin-Konfiguration muss ein Objekt sein.',config?.language));
   if(config.shading!==undefined&&(!config.shading||typeof config.shading!=='object'||Array.isArray(config.shading)))throw Error(translate('Beschattungseinstellungen müssen ein Objekt sein.',config.language));
-  const general=config.devices??[],covers=config.shading?.devices??[];
+  const general=config.devices===undefined?[]:config.devices,covers=config.shading?.devices===undefined?[]:config.shading.devices;
   if(!Array.isArray(general)||!Array.isArray(covers))throw Error(translate('Beide Gerätelisten müssen Listen sein.',config.language));
+  if([...general,...covers].some(d=>!d||typeof d!=='object'||Array.isArray(d)))throw Error(translate('Jeder Geräteeintrag muss ein Objekt sein.',config.language));
   const physical=d=>String(d.connection==='cloud'?d.cloudDeviceId:d.shellyDeviceId||'').toLowerCase().replace(/:/g,'').slice(-12).padStart(12,'0');
   const known=new Set(general.map(physical).filter(Boolean));
   for(const d of covers)if(known.has(physical(d)))throw Error(translate('Ein Shelly darf nicht zugleich unter Beschattungen und anderen Geräten eingerichtet sein.',config.language));
@@ -20,7 +24,18 @@ function validateGroups(config){
 }
 class CombinedPlatform{
   constructor(log,config,api){
-    this.config=normalize(validateGroups(config??{}));log=logger(log,this.config.language);this.api=api;this.log=log;this.events={universal:{},shading:{}};
+    this.api=api;
+    // Reject malformed configuration before creating stores, engine callbacks or device clients.
+    try{
+      this.config=normalize(validateGroups(config??{}));
+      validateDevices({...this.config,devices:this.config.devices??[]});
+    }catch(error){
+      const language=config?.language??config?.shading?.language??'de';
+      this.configurationError=true;this.log=logger(log,language);
+      this.log.error(format('Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}',language,{reason:translate(error.message,language)}));
+      return;
+    }
+    log=logger(log,this.config.language);this.log=log;this.events={universal:{},shading:{}};
     this.hiddenIds=new Set((this.config.shading?.devices??[]).filter(d=>d.homekitEnabled===false).map(d=>d.id));this.hiddenCached=[];
     this.hiddenStore=new HiddenAccessories(api.user?.storagePath?.(),message=>log.warn(message));
     const facade=kind=>new Proxy(api,{get:(target,key)=>{
@@ -51,6 +66,7 @@ class CombinedPlatform{
     api.on('shutdown',()=>{this.scenes?.stop();for(const kind of ['universal','shading'])for(const fn of this.events[kind].shutdown??[])fn();this.hiddenStore.close();shared().close();});
   }
   configureAccessory(accessory){
+    if(this.configurationError)return;
     if(accessory.context?.combinedEngine==='shading'||this.coverUUIDs.has(accessory.UUID)){if(this.hiddenIds.has(accessory.context?.deviceId)){this.hiddenCached.push(accessory);this.hiddenStore.capture(accessory);}this.shading.configureAccessory(accessory);}
     else this.devices.configureAccessory(accessory);
   }

@@ -48,7 +48,10 @@
     "Scene {name}: {status}; verbleibende Schritte verworfen, keine automatische Wiederholung.": "Scene {name}: {status}; verbleibende Schritte verworfen, keine automatische Wiederholung.",
     "Scene {name}: {status}": "Scene {name}: {status}",
     "Ungültiger Gerätebereich.": "Ungültiger Gerätebereich.",
-    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden."
+    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.",
+    "Die Plugin-Konfiguration muss ein Objekt sein.": "Die Plugin-Konfiguration muss ein Objekt sein.",
+    "Jeder Geräteeintrag muss ein Objekt sein.": "Jeder Geräteeintrag muss ein Objekt sein.",
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}"
   },
   "en": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "One bridge · separate device areas · shared cloud queue",
@@ -97,7 +100,10 @@
     "Scene {name}: {status}; verbleibende Schritte verworfen, keine automatische Wiederholung.": "Scene {name}: {status}; remaining steps discarded, no automatic retry.",
     "Scene {name}: {status}": "Scene {name}: {status}",
     "Ungültiger Gerätebereich.": "Invalid device area.",
-    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "The Shelly ZEPRA interface could not be started."
+    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "The Shelly ZEPRA interface could not be started.",
+    "Die Plugin-Konfiguration muss ein Objekt sein.": "The plugin configuration must be an object.",
+    "Jeder Geräteeintrag muss ein Objekt sein.": "Each device entry must be an object.",
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Invalid configuration. Shelly ZEPRA remains inactive. Correct the settings and restart the child bridge. Reason: {reason}"
   },
   "fr": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "Un pont · des espaces distincts · une file cloud commune",
@@ -146,7 +152,10 @@
     "Scene {name}: {status}; verbleibende Schritte verworfen, keine automatische Wiederholung.": "Scène {name} : {status} ; étapes restantes abandonnées, sans nouvelle tentative automatique.",
     "Scene {name}: {status}": "Scène {name} : {status}",
     "Ungültiger Gerätebereich.": "Espace d’appareils non valide.",
-    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "Impossible de démarrer l’interface Shelly ZEPRA."
+    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "Impossible de démarrer l’interface Shelly ZEPRA.",
+    "Die Plugin-Konfiguration muss ein Objekt sein.": "La configuration du plugin doit être un objet.",
+    "Jeder Geräteeintrag muss ein Objekt sein.": "Chaque entrée d’appareil doit être un objet.",
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuration non valide. Shelly ZEPRA reste inactif. Corrigez les paramètres, puis redémarrez le pont enfant. Cause : {reason}"
   },
   "es": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "Un puente · áreas de dispositivos separadas · cola de nube común",
@@ -195,7 +204,10 @@
     "Scene {name}: {status}; verbleibende Schritte verworfen, keine automatische Wiederholung.": "Escena {name}: {status}; pasos restantes descartados, sin reintento automático.",
     "Scene {name}: {status}": "Escena {name}: {status}",
     "Ungültiger Gerätebereich.": "Área de dispositivos no válida.",
-    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "No se pudo iniciar la interfaz de Shelly ZEPRA."
+    "Shelly-ZEPRA-Oberfläche konnte nicht gestartet werden.": "No se pudo iniciar la interfaz de Shelly ZEPRA.",
+    "Die Plugin-Konfiguration muss ein Objekt sein.": "La configuración del plugin debe ser un objeto.",
+    "Jeder Geräteeintrag muss ein Objekt sein.": "Cada entrada de dispositivo debe ser un objeto.",
+    "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuración no válida. Shelly ZEPRA permanece inactivo. Corrija los ajustes y reinicie el puente secundario. Motivo: {reason}"
   }
 };
  I.register('common',catalogs);return catalogs;

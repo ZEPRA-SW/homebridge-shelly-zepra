@@ -17,17 +17,17 @@ Install through Homebridge UI using the npm package, or use the GitHub release a
 If the new package is not indexed in search yet, use the GitHub release archive below. On installations using `/var/lib/homebridge`, the Homebridge web terminal can also install the exact npm release:
 
 ```bash
-npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.0.1
+npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.0.2
 ```
 
 ## Install the release archive
 
-1. Download `homebridge-shelly-zepra-1.0.1.tgz` from this repository's release assets.
+1. Download `homebridge-shelly-zepra-1.0.2.tgz` from this repository's release assets.
 2. Copy that archive to `/tmp/` on the Homebridge host using your usual SSH/SFTP file transfer.
 3. In the **Homebridge web terminal** on an installation using `/var/lib/homebridge`, run:
 
    ```bash
-   npm install --prefix /var/lib/homebridge /tmp/homebridge-shelly-zepra-1.0.1.tgz
+   npm install --prefix /var/lib/homebridge /tmp/homebridge-shelly-zepra-1.0.2.tgz
    ```
 
 4. Restart Homebridge **through the Homebridge web interface**. The installation command contains no restart command.

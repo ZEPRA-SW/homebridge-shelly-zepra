@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+- Catch malformed shared device lists and invalid general-device settings before initialization.
+- Report the configuration error in the selected language and remain inactive without modifying cached accessories or persisted state.
+
 ## 1.0.1
 
 - Complete German, English, French and Spanish language support across the shared interface, general devices and Scenes.
