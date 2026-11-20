@@ -2,6 +2,8 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.ShellyOverview=factory();})(typeof window!=='undefined'?window:globalThis,function(){
   const output=/^(switch|relay|light|rgb|rgbw|cct|color|white):\d+$/;
   const input=/^(input|extinput|voltmeter):/;
+  const weather={WindSpeed:['Windgeschwindigkeit','km/h'],GustSpeed:['Böen','km/h'],WindDirection:['Windrichtung','°'],RainDetected:['Regenstatus',''],UVIndex:['UV-Index',''],AirPressure:['Luftdruck','hPa'],DewPoint:['Taupunkt','°C'],Precipitation:['Niederschlag','mm'],CapacitorVoltage:['Kondensatorspannung','V']};
+  const weatherMetric=row=>Object.hasOwn(weather,row.metric)?row.metric:Object.keys(row.values||{}).find(key=>Object.hasOwn(weather,key));
   function rows(device,data,online){
     const enabledInputs=(device.inputs||[]).filter(c=>c.enabled===true),allowed=new Set(enabledInputs.map(c=>c.component));
     const readings=(online?data?.readings||[]:[]).filter(r=>(!Array.isArray(data?.bthome)||!/^bthomesensor:/.test(r.component))&&(!input.test(r.component)||allowed.has(r.component))),measurements=(online?data?.measurements||[]:[]).filter(r=>!input.test(r.component)||allowed.has(r.component)),used=new Set(),result=[];
@@ -27,6 +29,8 @@
     if(row.type==='button')return {state:'reading',label:'Taster'};
     const v=row.values||{};
     if(row.type==='analog')return Number.isFinite(v.AnalogValue)?{state:'reading',label:'Analogwert'}:{state:'unknown',label:'Unbekannt'};
+    if(typeof v.RainDetected==='boolean')return {state:v.RainDetected?'active':'inactive',label:v.RainDetected?'Regen':'Kein Regen'};
+    if(row.type==='weather')return Object.keys(v).some(key=>Object.hasOwn(weather,key)&&Number.isFinite(v[key]))?{state:'reading',label:'Messwerte'}:{state:'unknown',label:'Unbekannt'};
     if(typeof v.On==='boolean')return {state:v.On?'active':'inactive',label:v.On?'Ein':'Aus'};
     if(row.kind==='input'&&[0,1].includes(v.ContactSensorState))return {state:v.ContactSensorState?'active':'inactive',label:v.ContactSensorState?'Aktiv':'Inaktiv'};
     if([0,1].includes(v.ContactSensorState))return {state:v.ContactSensorState?'active':'inactive',label:v.ContactSensorState?'Offen':'Geschlossen'};
@@ -35,5 +39,5 @@
     return {state:'reading',label:row.kind==='meter'?'Messwerte':'Sensor'};
   }
   function title(row){const name=row.name||row.component;return /^bthomesensor:/.test(row.component)&&!name.includes(row.component)?name+' · '+row.component:name;}
-  return {rows,signal,title};
+  return {rows,signal,title,weather,weatherMetric};
 });

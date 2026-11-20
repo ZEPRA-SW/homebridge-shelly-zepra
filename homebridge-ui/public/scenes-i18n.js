@@ -2,6 +2,23 @@
 // Stable German source keys also translate saved protocol messages without altering storage.
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./i18n'));else factory(root.ZepraI18n);})(typeof window==='object'?window:globalThis,I=>{
  const rows=[
+ ["Windgeschwindigkeit", "Wind speed", "Vitesse du vent", "Velocidad del viento"],
+ ["Böen", "Wind gusts", "Rafales", "Ráfagas"],
+ ["Windrichtung", "Wind direction", "Direction du vent", "Dirección del viento"],
+ ["Regenstatus", "Rain status", "État de pluie", "Estado de lluvia"],
+ ["Regen", "Rain", "Pluie", "Lluvia"],
+ ["Kein Regen", "No rain", "Pas de pluie", "Sin lluvia"],
+ ["UV-Index", "UV index", "Indice UV", "Índice UV"],
+ ["Luftdruck", "Air pressure", "Pression atmosphérique", "Presión atmosférica"],
+ ["Niederschlag", "Precipitation", "Précipitations", "Precipitación"],
+ ["Kondensatorspannung", "Capacitor voltage", "Tension du condensateur", "Tensión del condensador"],
+ ["Windgeschwindigkeit (km/h)", "Wind speed (km/h)", "Vitesse du vent (km/h)", "Velocidad del viento (km/h)"],
+ ["Böen (km/h)", "Wind gusts (km/h)", "Rafales (km/h)", "Ráfagas (km/h)"],
+ ["Windrichtung (°)", "Wind direction (°)", "Direction du vent (°)", "Dirección del viento (°)"],
+ ["Luftdruck (hPa)", "Air pressure (hPa)", "Pression atmosphérique (hPa)", "Presión atmosférica (hPa)"],
+ ["Taupunkt (°C)", "Dew point (°C)", "Point de rosée (°C)", "Punto de rocío (°C)"],
+ ["Niederschlag (mm)", "Precipitation (mm)", "Précipitations (mm)", "Precipitación (mm)"],
+ ["Kondensatorspannung (V)", "Capacitor voltage (V)", "Tension du condensateur (V)", "Tensión del condensador (V)"],
  ["Taupunkt", "Dew point", "Point de rosée", "Punto de rocío"],
  ["Temperaturquelle", "Temperature source", "Source de température", "Fuente de temperatura"],
  ["Luftfeuchtequelle", "Humidity source", "Source d’humidité", "Fuente de humedad"],
@@ -1354,7 +1371,26 @@
   "Add-on input",
   "Entrée du module",
   "Entrada del módulo"
- ]
+ ],
+["Beschattungen", "Shading", "Protections solaires", "Protecciones solares"],
+["Relais und Schalter", "Relays and switches", "Relais et interrupteurs", "Relés e interruptores"],
+["Steckdosen", "Plugs", "Prises", "Enchufes"],
+["Licht und Dimmer", "Lighting and dimmers", "Éclairage et variateurs", "Iluminación y reguladores"],
+["Eingänge und Taster", "Inputs and buttons", "Entrées et boutons", "Entradas y pulsadores"],
+["Energiezähler", "Energy meters", "Compteurs d’énergie", "Contadores de energía"],
+["Pro", "Pro", "Pro", "Pro"],
+["Displays", "Displays", "Écrans", "Pantallas"],
+["Sensoren (Cloud)", "Sensors (Cloud)", "Capteurs (Cloud)", "Sensores (Cloud)"],
+["Weitere Geräte", "Other devices", "Autres appareils", "Otros dispositivos"],
+["Sensoren", "Sensors", "Capteurs", "Sensores"],
+["Aktueller Wert: {value}", "Current value: {value}", "Valeur actuelle : {value}", "Valor actual: {value}"],
+["Aktueller Zustand: {value}", "Current state: {value}", "État actuel : {value}", "Estado actual: {value}"],
+["Keine aktuellen Daten verfügbar.", "No current data available.", "Aucune donnée actuelle disponible.", "No hay datos actuales disponibles."],
+["Quelle – Gerät oder Sensor", "Source – device or sensor", "Source – appareil ou capteur", "Origen – dispositivo o sensor"],
+["Bitte Gerät oder Sensor auswählen", "Please select a device or sensor", "Sélectionnez un appareil ou un capteur", "Seleccione un dispositivo o sensor"],
+["Zuerst Gerät oder Sensor auswählen", "Select a device or sensor first", "Sélectionnez d’abord un appareil ou un capteur", "Seleccione primero un dispositivo o sensor"],
+["Gespeicherter Sensor – aktuell keine Daten", "Saved sensor – no current data", "Capteur enregistré – aucune donnée actuelle", "Sensor guardado – sin datos actuales"],
+["Hier erscheinen nur Zustände und Messwerte der gewählten Quelle. Sensor-IDs bleiben zur Zuordnung sichtbar.", "Only states and measurements from the selected source appear here. Sensor IDs remain visible for identification.", "Seuls les états et les mesures de la source sélectionnée apparaissent ici. Les identifiants des capteurs restent visibles.", "Aquí solo aparecen los estados y las mediciones del origen seleccionado. Los identificadores de sensor permanecen visibles."]
 ];
  const dictionaries={de:{},en:{},fr:{},es:{}};
  for(const [key,...translations] of rows){dictionaries.de[key]=key;['en','fr','es'].forEach((language,index)=>{dictionaries[language][key]=translations[index];});}

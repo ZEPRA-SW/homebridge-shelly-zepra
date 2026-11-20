@@ -1,30 +1,58 @@
 'use strict';
 window.ZepraSceneUi={mount({config,request,changed}){
  const I=window.ZepraI18n,t=(text,params={})=>I.translate(text,config.language,params,'scenes'),number=value=>new Intl.NumberFormat(I.locale(config.language)).format(value),date=value=>new Date(value).toLocaleString(I.locale(config.language),{timeZone:config.shading?.timeZone||'Europe/Berlin'});
- const M=window.ZepraScenes,root=document.getElementById('scene-list'),error=document.getElementById('scene-error'),folds=new WeakMap(),summaries=new Map();let data={devices:[],states:{}},opened,liveGood=true,refreshing=false,lastError='';const live=new Map(),calculations=new Map();
+ const M=window.ZepraScenes,root=document.getElementById('scene-list'),error=document.getElementById('scene-error'),folds=new WeakMap(),summaries=new Map();let data={devices:[],states:{}},sensorOptions=[],opened,liveGood=true,refreshing=false,lastError='';const live=new Map(),calculations=new Map();
  config.scenes??=[];
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const ref=s=>s?Object.fromEntries(['area','deviceId','sensorId','component','metric'].filter(k=>s[k]!==undefined).map(k=>[k,s[k]])):undefined;
  const targetKey=a=>JSON.stringify([a?.area,a?.deviceId,a?.component||'',a?.property]);
  function notify(){for(const fn of calculations.values())fn();for(const [node,fn]of summaries)node.textContent=fn();let valid=true;try{M.validate(config.scenes,config);lastError='';error.textContent='';}catch(e){valid=false;lastError=e.message;error.textContent=t(lastError);}changed(valid);}
  function field(parent,label,node,help){label=t(label);if(help)help=t(help);node.setAttribute('aria-label',label);const wrap=el('label');wrap.append(el('span',label),node);if(help)wrap.append(el('small',help));parent.append(wrap);return node;}
- function select(value,items,handler){const n=el('select');for(const [v,label,verbatim]of items){const o=el('option',verbatim?label:t(label));o.value=String(v);n.append(o);}n.value=String(value??'');n.addEventListener('change',()=>handler(n.value));return n;}
+ function select(value,items,handler){const n=el('select');const append=(parent,items)=>{for(const item of items){if(item.options){const group=el('optgroup');group.label=item.label;append(group,item.options);parent.append(group);continue;}const [v,label,verbatim,description]=item,o=el('option',verbatim?label:t(label));o.value=String(v);if(description)o.title=description;parent.append(o);}};append(n,items);n.value=String(value??'');n.addEventListener('change',()=>handler(n.value));return n;}
  function input(value,type,handler){const n=el('input');n.type=type;n.value=value??'';if(type==='number')n.step='any';n.addEventListener('input',()=>handler(type==='number'?(n.value===''?undefined:Number(n.value)):n.value));return n;}
  function button(text,handler){const n=el('button',t(text));n.type='button';n.addEventListener('click',handler);return n;}
  function weekdays(parent,object){object.days??=[0,1,2,3,4,5,6];const group=el('div',undefined,'scene-days');[1,2,3,4,5,6,0].forEach(day=>{const name=t(['So','Mo','Di','Mi','Do','Fr','Sa'][day]);const label=el('label'),box=el('input');box.type='checkbox';box.checked=object.days.includes(day);box.addEventListener('change',()=>{object.days=box.checked?[...new Set([...object.days,day])]:object.days.filter(d=>d!==day);notify();});label.append(box,el('span',name));group.append(label);});parent.append(group);}
- function valueField(parent,value,metric,handler){if(M.boolean.has(metric))return field(parent,'Gewünschter Wert',select(value===true?'true':'false',[['true',metric==='MotionDetected'?'Bewegung':'Ein / Aktiv'],['false',metric==='MotionDetected'?'Keine Bewegung':'Aus / Inaktiv']],v=>handler(v==='true')));if(metric==='ContactSensorState')return field(parent,'Kontaktzustand',select(value??1,[[0,'Geschlossen'],[1,'Offen']],v=>handler(Number(v))));return field(parent,'Wert',input(value,'number',handler));}
+ function valueField(parent,value,metric,handler){if(M.boolean.has(metric))return field(parent,'Gewünschter Wert',select(value===true?'true':'false',[['true',metric==='MotionDetected'?'Bewegung':metric==='RainDetected'?'Regen':'Ein / Aktiv'],['false',metric==='MotionDetected'?'Keine Bewegung':metric==='RainDetected'?'Kein Regen':'Aus / Inaktiv']],v=>handler(v==='true')));if(metric==='ContactSensorState')return field(parent,'Kontaktzustand',select(value??1,[[0,'Geschlossen'],[1,'Offen']],v=>handler(Number(v))));return field(parent,'Wert',input(value,'number',handler));}
  function folded(object,cls,title,initial=true){const box=el('details',undefined,cls);box.open=folds.has(object)?folds.get(object):initial;const summary=el('summary',title);box.append(summary);box.addEventListener('toggle',()=>folds.set(object,box.open));return box;}
- function sourceObservation(source,now){
-  if(!liveGood||source?.area!=='devices')return null;const device=config.devices?.find(d=>d.id===source.deviceId);if(!device)return null;
-  const expected=JSON.stringify([device.id,device.connection==='cloud'?'cloud:'+device.cloudServer:device.host,String((device.connection==='cloud'?device.cloudDeviceId:device.shellyDeviceId)||'').toLowerCase().replace(/:/g,'').slice(-12)]),row=data.devices?.find(r=>r.target===expected),maxAge=Number.isFinite(data.devicesMaxAge)?data.devicesMaxAge:30000;
-  if(!row?.online||!Number.isFinite(row.checkedAt)||now-row.checkedAt>maxAge||row.checkedAt>now+5000)return null;
-  const readings=source.sensorId?row.bthome?.find(b=>b.id===source.sensorId&&!b.fault)?.readings:row.readings,reading=readings?.find(r=>r.component===source.component&&!r.fault&&Number.isFinite(r.values?.[source.metric]));return reading?{value:reading.values[source.metric],observedAt:row.checkedAt}:null;
+ function sourceObservation(source,now){return liveGood?M.sourceReading(config,data,source,now):null;}
+ function currentReadingText(source,reading){
+  if(!reading)return t('Keine aktuellen Daten verfügbar.');
+  const {value}=reading;let text,state=typeof value==='boolean'||source.metric==='ContactSensorState';
+  if(source.metric==='ContactSensorState')text=t(value===0?'Geschlossen':'Offen');
+  else if(typeof value==='boolean')text=t(source.metric==='MotionDetected'?(value?'Bewegung':'Keine Bewegung'):source.metric==='RainDetected'?(value?'Regen':'Kein Regen'):(value?'Ein':'Aus'));
+  else{
+   const units={Brightness:'%',position:'%',slatPosition:'%',CurrentTemperature:'°C',TargetTemperature:'°C',CurrentRelativeHumidity:'%',CurrentAmbientLightLevel:'lux',BatteryLevel:'%',Power:'W',Energy:'kWh',Voltage:'V',Current:'A',WindSpeed:'km/h',GustSpeed:'km/h',WindDirection:'°',AirPressure:'hPa',DewPoint:'°C',Precipitation:'mm',CapacitorVoltage:'V'};
+   const unit=source.metric==='AnalogValue'?(['%','V'].includes(reading.unit)?reading.unit:['%','V'].includes(source.unit)?source.unit:source.component?.startsWith('voltmeter:')?'V':'%'):units[source.metric]||'';
+   text=new Intl.NumberFormat(I.locale(config.language),{maximumFractionDigits:3}).format(value)+(unit?' '+unit:'');
+  }
+  return t(state?'Aktueller Zustand: {value}':'Aktueller Wert: {value}',{value:text});
  }
+ // Use the model catalogue's categories; never reorder the saved device arrays or reference values.
+ function sourceDevices(){
+  const categories=new Map();let order=1;for(const group of window.ShellyModels?.grouped(undefined,'cloud')||[])for(const child of group.groups||[group]){const item={group:[group.label,...(group.groups?[child.label]:[])].map(t).join(' / '),order:order++};for(const model of child.models)categories.set(model.id,item);}
+  const collator=new Intl.Collator(I.locale(config.language),{numeric:true,sensitivity:'base'}),devices=[...(config.devices||[]).map(d=>({area:'devices',deviceId:d.id,name:d.name||d.id,label:(d.name||d.id)+' ['+d.id+']',...(categories.get(d.modelId)||{group:t('Weitere Geräte'),order:999})})),...(config.shading?.devices||[]).map(d=>({area:'shading',deviceId:d.id,name:d.name||d.id,label:(d.name||d.id)+' ['+d.id+'] · '+t('Beschattung'),group:t('Beschattungen'),order:0}))];
+  return devices.sort((a,b)=>a.order-b.order||collator.compare(a.name,b.name)||collator.compare(a.deviceId,b.deviceId));
+ }
+ function scopeKey(scope){return JSON.stringify(scope?.sensorId||scope?.component?[scope.area,scope.deviceId,scope.sensorId||'',scope.component||'']:[scope?.area,scope?.deviceId]);}
+ function sensorDevices(){
+  const collator=new Intl.Collator(I.locale(config.language),{numeric:true,sensitivity:'base'});
+  return M.sensorChoices(config,data).map(sensor=>{
+   const host=sensor.hostName+' ['+sensor.hostId+']',id=sensor.sensorId||sensor.component;let name=sensor.name||id;
+   if(!sensor.sensorId&&sensor.metric){
+    const suffix=M.labels[sensor.metric],prefix=host+' / ',localized=localizedLabel({...sensor,label:prefix+name+' · '+suffix},M.labels,'metric');
+    name=localized.slice(prefix.length,-(' · '+t(suffix)).length);
+    if(name===sensor.component)name=t(suffix);
+   }
+   return {...sensor,name,label:(name===id?name:name+' ['+id+']')+' · '+host+(sensor.area==='shading'?' · '+t('Beschattung'):'')};
+  }).sort((a,b)=>collator.compare(a.name,b.name)||collator.compare(a.hostName,b.hostName)||collator.compare(scopeKey(a),scopeKey(b)));
+ }
+ function groupedSources(items,devices,toOption){const result=[];for(const device of devices){const matching=items.filter(s=>s.area===device.area&&s.deviceId===device.deviceId);if(!matching.length)continue;let group=result.at(-1);if(group?.label!==device.group){group={label:device.group,options:[]};result.push(group);}group.options.push(...matching.map(toOption));}return result;}
+
  function conditionText(c){
   if(c.kind==='group')return t(c.children.length===1?'{operator} · {count} Bedingung':'{operator} · {count} Bedingungen',{operator:t(c.operator==='or'?'ODER':'UND'),count:number(c.children.length)});
   if(c.kind==='time')return t('Zeit · {time}',{time:c.time||t('Uhrzeit wählen')});
   if(c.kind==='dewpoint')return t('Taupunkt')+' · '+(c.temperatureSource?.deviceId||t('Temperaturquelle'))+' + '+(c.humiditySource?.deviceId||t('Luftfeuchtequelle'))+' '+({eq:'=',ne:'≠',gt:'>',gte:'≥',lt:'<',lte:'≤'})[c.operator]+' '+number(c.value)+' °C'+(c.holdSeconds?t(' · {seconds} s',{seconds:number(c.holdSeconds)}):'');
-  const value=typeof c.value==='boolean'?t(c.value?'aktiv':'inaktiv'):c.source?.metric==='ContactSensorState'?t(c.value===0?'geschlossen':'offen'):number(c.value);
+  const value=typeof c.value==='boolean'?t(c.source?.metric==='RainDetected'?(c.value?'Regen':'Kein Regen'):(c.value?'aktiv':'inaktiv')):c.source?.metric==='ContactSensorState'?t(c.value===0?'geschlossen':'offen'):number(c.value);
   return (c.source?.deviceId||c.sourceDevice?.deviceId||t('Shelly wählen'))+' · '+t(M.labels[c.source?.metric]||'Zustand / Wert wählen')+(c.source?' '+({eq:'=',ne:'≠',gt:'>',gte:'≥',lt:'<',lte:'≤'})[c.operator]+' '+value:'')+(c.holdSeconds?t(' · {seconds} s',{seconds:number(c.holdSeconds)}):'');
  }
  // Protocol property IDs are internal identifiers; translate their display names and values only.
@@ -54,29 +82,31 @@ window.ZepraSceneUi={mount({config,request,changed}){
   const suffix=labels[item[property]],unit=item.unit?' ('+item.unit+')':'';return suffix&&label.endsWith(' · '+suffix+unit)?label.slice(0,-suffix.length-unit.length)+t(suffix)+unit:label;
  }
  function leafFields(c,scene,sources){const fields=el('div',undefined,'scene-fields');
-    const deviceKey=d=>JSON.stringify([d.area,d.deviceId]);
+    const deviceKey=scopeKey;
     if(!c.sourceDevice&&c.source)c.sourceDevice={area:c.source.area,deviceId:c.source.deviceId};
-    const devices=[...(config.devices||[]).map(d=>({area:'devices',deviceId:d.id,name:d.name,label:(d.name||d.id)+' ['+d.id+']'})),...(config.shading.devices||[]).map(d=>({area:'shading',deviceId:d.id,name:d.name,label:(d.name||d.id)+' ['+d.id+'] · '+t('Beschattung')}))];
+    const devices=sourceDevices(),sensors=sensorOptions,choices=[...sensors,...devices];
     if(!['time','dewpoint'].includes(c.kind)){
-     const chosen=c.sourceDevice?deviceKey(c.sourceDevice):'',items=[['','Bitte Shelly auswählen'],...devices.map(d=>[deviceKey(d),d.label,true])];if(chosen&&!devices.some(d=>deviceKey(d)===chosen))items.push([chosen,'Gespeichertes Shelly – nicht mehr vorhanden']);
-     field(fields,'Quelle – Shelly',select(chosen,items,v=>{const d=devices.find(d=>deviceKey(d)===v);c.sourceDevice=d?{area:d.area,deviceId:d.deviceId}:undefined;delete c.source;c.operator='eq';c.value=c.kind==='status'?true:0;opened=scene.id;render();notify();}));
+     const chosen=c.sourceDevice?deviceKey(c.sourceDevice):'',items=[['','Bitte Gerät oder Sensor auswählen'],...(sensors.length?[{label:t('Sensoren'),options:sensors.map(d=>[deviceKey(d),d.label,true])}]:[]),...groupedSources(devices,devices,d=>[deviceKey(d),d.label,true])];if(chosen&&!choices.some(d=>deviceKey(d)===chosen))items.push([chosen,c.sourceDevice?.sensorId||c.sourceDevice?.component?'Gespeicherter Sensor – aktuell keine Daten':'Gespeichertes Shelly – nicht mehr vorhanden']);
+     field(fields,'Quelle – Gerät oder Sensor',select(chosen,items,v=>{const d=choices.find(d=>deviceKey(d)===v);c.sourceDevice=d?Object.fromEntries(['area','deviceId','sensorId','component'].filter(key=>d[key]!==undefined).map(key=>[key,d[key]])):undefined;delete c.source;c.operator='eq';c.value=c.kind==='status'?true:0;opened=scene.id;render();notify();}));
     }
     field(fields,'Bedingungsart',select(c.kind,[['status','Status'],['time','Zeit'],['value','Wert'],['dewpoint','Taupunkt']],v=>{c.kind=v;delete c.source;delete c.temperatureSource;delete c.humiditySource;if(!['value','dewpoint'].includes(v))delete c.hysteresis;if(v==='time'){delete c.holdSeconds;c.time??='08:00';c.days??=[0,1,2,3,4,5,6];}else{c.value=v==='status'?true:0;c.operator='eq';}opened=scene.id;render();notify();}));
     if(c.kind==='time'){field(fields,'Uhrzeit',input(c.time||'08:00','time',v=>{c.time=v;notify();}));const days=el('div',undefined,'scene-wide');days.append(el('span',t('Wochentage')));weekdays(days,c);fields.append(days);}
     else{
      if(c.kind==='dewpoint'){
       for(const [key,label,metric]of [['temperatureSource','Temperaturquelle','CurrentTemperature'],['humiditySource','Luftfeuchtequelle','CurrentRelativeHumidity']]){
-       const options=sources.filter(s=>s.area==='devices'&&s.metric===metric),current=c[key]?M.key(c[key]):'',items=[['','Bitte Zustand oder Sensorwert auswählen'],...options.map(s=>[s.id,s.label,true])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
+       const options=sources.filter(s=>s.metric===metric),current=c[key]?M.key(c[key]):'',items=[['','Bitte Zustand oder Sensorwert auswählen'],...groupedSources(options,devices,s=>[s.id,s.label,true])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
        const sourceField=field(fields,label,select(current,items,value=>{c[key]=ref(options.find(s=>s.id===value));notify();}));if(key==='temperatureSource')sourceField.parentElement.classList.add('scene-dewpoint-temperature');
       }
       const preview=el('p',undefined,'scene-help scene-wide scene-dewpoint-value'),update=()=>{const sample=M.observation(c,sourceObservation,Date.now());preview.textContent=sample?t('Berechneter Taupunkt: {value} °C',{value:number(sample.value)}):t('Keine aktuellen Taupunktdaten verfügbar.');};calculations.set(c,update);update();fields.append(preview,el('p',t('Taupunkt über Wasser nach Magnus. Temperatur und Luftfeuchte müssen dieselbe Luft beschreiben. Bereich: −45 bis 60 °C und über 0 bis 100 % relative Feuchte. Fehlende, fehlerhafte oder veraltete Werte lösen nichts aus.'),'scene-help scene-wide'));
      }else{
-      const options=sources.filter(s=>c.sourceDevice&&s.area===c.sourceDevice.area&&s.deviceId===c.sourceDevice.deviceId&&(c.kind==='status'?s.type==='boolean'||s.metric==='ContactSensorState':s.type==='number'&&s.metric!=='ContactSensorState'));
-      const current=c.source?M.key(c.source):'',device=devices.find(d=>c.sourceDevice&&deviceKey(d)===deviceKey(c.sourceDevice));
-      const short=s=>{const prefix=(device?.name||s.deviceId)+' ['+s.deviceId+']';return s.label.startsWith(prefix)?s.label.slice(prefix.length).replace(/^( \/ | · )/,''):s.label;};
-      const items=[['',c.sourceDevice?'Bitte Zustand oder Sensorwert auswählen':'Zuerst Shelly auswählen'],...options.map(s=>[s.id,short(s),true])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
-      const metric=select(current,items,value=>{const source=options.find(s=>s.id===value);c.source=ref(source);c.value=source?.type==='boolean'?true:source?.metric==='ContactSensorState'?1:0;c.operator='eq';opened=scene.id;render();notify();});metric.disabled=!c.sourceDevice;
-      field(fields,c.kind==='status'?'Zustand / Sensor':'Messwert / Sensor',metric,'Hier erscheinen nur Zustände und Sensoren des gewählten Shellys. BTHome-IDs bleiben zur Zuordnung sichtbar.');
+      const directSensor=!!(c.sourceDevice?.sensorId||c.sourceDevice?.component),options=sources.filter(s=>M.scopeMatches(c.sourceDevice,s)&&(directSensor||(c.kind==='status'?s.type==='boolean'||s.metric==='ContactSensorState':s.type==='number'&&s.metric!=='ContactSensorState')));
+      const current=c.source?M.key(c.source):'',device=devices.find(d=>c.sourceDevice&&d.area===c.sourceDevice.area&&d.deviceId===c.sourceDevice.deviceId);
+      const short=s=>{if(directSensor){const unit=s.metric==='AnalogValue'&&s.unit?' ('+s.unit+')':'';return t(M.labels[s.metric]||s.metric)+unit+(s.component?' · '+s.component:'');}const prefix=(device?.name||s.deviceId)+' ['+s.deviceId+']';return s.label.startsWith(prefix)?s.label.slice(prefix.length).replace(/^( \/ | · )/,''):s.label;};
+      const items=[['',c.sourceDevice?'Bitte Zustand oder Sensorwert auswählen':'Zuerst Gerät oder Sensor auswählen'],...options.map(s=>[s.id,short(s),true,s.label])];if(current&&!options.some(s=>s.id===current))items.push([current,'Gespeicherter Zustand / Wert – aktuell keine Daten']);
+      const metric=select(current,items,value=>{const source=options.find(s=>s.id===value);c.source=ref(source);if(directSensor&&source)c.kind=source.type==='boolean'||source.metric==='ContactSensorState'?'status':'value';c.value=source?.type==='boolean'?true:source?.metric==='ContactSensorState'?1:0;c.operator='eq';opened=scene.id;render();notify();});metric.disabled=!c.sourceDevice;
+      field(fields,directSensor?'Messwert / Sensor':c.kind==='status'?'Zustand / Sensor':'Messwert / Sensor',metric,'Hier erscheinen nur Zustände und Messwerte der gewählten Quelle. Sensor-IDs bleiben zur Zuordnung sichtbar.');
+      const currentValue=el('small',undefined,'scene-current-reading');currentValue.setAttribute('role','status');currentValue.setAttribute('aria-live','polite');currentValue.setAttribute('aria-atomic','true');metric.after(currentValue);
+      const updateCurrent=()=>{currentValue.hidden=!c.source;if(!c.source){currentValue.textContent='';return;}const reading=sourceObservation(c.source,Date.now());currentValue.dataset.state=reading?'available':'unavailable';currentValue.textContent=currentReadingText(c.source,reading);};calculations.set(c,updateCurrent);updateCurrent();
      }
      if(c.source||c.kind==='dewpoint'){field(fields,'Vergleich',select(c.operator||'eq',c.kind==='status'?[['eq','ist gleich'],['ne','ist ungleich']]:[['gt','größer als'],['gte','größer oder gleich'],['lt','kleiner als'],['lte','kleiner oder gleich'],['eq','ist gleich'],['ne','ist ungleich']],value=>{c.operator=value;notify();}));
      if(c.kind==='dewpoint')field(fields,'Taupunktgrenze (°C)',input(c.value,'number',value=>{c.value=value;notify();}));else valueField(fields,c.value,c.source?.metric,value=>{c.value=value;notify();});
@@ -100,7 +130,7 @@ window.ZepraSceneUi={mount({config,request,changed}){
   return box;
  }
  function render(){
-  root.replaceChildren();summaries.clear();live.clear();calculations.clear();const sources=M.sources(config,data).map(s=>({...s,label:localizedLabel(s,M.labels,'metric')})),targets=M.targets(config).map(a=>({...a,label:localizedLabel(a,M.properties,'property')}));document.getElementById('scene-empty').hidden=config.scenes.length>0;
+  root.replaceChildren();summaries.clear();live.clear();calculations.clear();sensorOptions=sensorDevices();const sources=M.sources(config,data).map(s=>({...s,label:localizedLabel(s,M.labels,'metric')})),targets=M.targets(config).map(a=>({...a,label:localizedLabel(a,M.properties,'property')}));document.getElementById('scene-empty').hidden=config.scenes.length>0;
   for(const scene of config.scenes){const details=el('details',undefined,'scene-card');details.open=opened===scene.id;const summary=el('summary'),name=el('strong',scene.name),badge=el('span',t(({off:'Aus',on:'Immer aktiv',schedule:'Zeitplan'})[M.mode(scene)]),'scene-mode');const lamp=el('span',undefined,'scene-indicator');lamp.setAttribute('role','img');const identity=el('span',undefined,'scene-identity');identity.append(lamp,name);summary.append(identity,badge);details.append(summary);details.addEventListener('toggle',()=>{if(details.open)opened=scene.id;});
    const body=el('div',undefined,'scene-body'),meta=el('div',undefined,'scene-fields');field(meta,'Name der Scene',input(scene.name,'text',v=>{scene.name=v;name.textContent=v;notify();}));field(meta,'Betriebsart',select(M.mode(scene),[['off','Aus'],['on','Immer aktiv'],['schedule','Nach Zeitplan']],v=>{scene.mode=v;scene.schedule??={start:'08:00',end:'20:00',days:[0,1,2,3,4,5,6]};opened=scene.id;render();notify();}));body.append(meta);const resetLabel=el('label',undefined,'scene-reset-option'),resetBox=el('input');resetBox.type='checkbox';resetBox.checked=scene.restoreOnReset===true;resetBox.setAttribute('aria-label',t('Bei Rücksetzen der Bedingung vorherigen Zustand wiederherstellen'));resetBox.addEventListener('change',()=>{scene.restoreOnReset=resetBox.checked;notify();});resetLabel.append(resetBox,el('span',t('Bei Rücksetzen der Bedingung vorherigen Zustand wiederherstellen')));body.append(resetLabel,el('p',t('Mit Haken werden vor dem ersten Befehl die Ausgangswerte gespeichert. Sobald der gesamte Startbedingungsbaum wieder falsch ist, werden eigene Änderungen zurückgenommen. Fehlende Daten lösen keine Rücksetzung aus. Zeitbedingungen werden nach ihrer Trefferminute falsch.'),'scene-help'));
    if(M.mode(scene)==='schedule'){const plan=el('section',undefined,'scene-schedule');plan.append(el('h3',t('Aktivierungszeitplan')));const fields=el('div',undefined,'scene-fields');field(fields,'Beginn',input(scene.schedule.start,'time',v=>{scene.schedule.start=v;notify();}));field(fields,'Ende',input(scene.schedule.end,'time',v=>{scene.schedule.end=v;notify();}));plan.append(fields);weekdays(plan,scene.schedule);plan.append(el('small',t('Zeitzone: {timeZone}. Zeitfenster können über Mitternacht gehen. Der Wochentag gehört zum Beginn. Außerhalb des Fensters wird nichts nachgeholt.',{timeZone:config.shading?.timeZone||'Europe/Berlin'})));body.append(plan);}

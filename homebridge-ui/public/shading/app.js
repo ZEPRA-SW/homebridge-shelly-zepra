@@ -38,7 +38,7 @@
   }
   function renderFields(container, definitions, object, prefix = [], required = [], header) {
     for (const [key, definition] of Object.entries(definitions)) {
-      if (key === 'devices') continue;
+      if (['devices', 'bthome'].includes(key)) continue;
       const roller = object.deviceType === 'roller';
       if (!prefix.length && object.id !== undefined) {
         const cloud = object.connection === 'cloud';
@@ -301,6 +301,7 @@
       const fields = el('div', 'fields');
       renderFields(fields, ordered, device, [], ['id', 'name', ...(device.connection === 'cloud' ? ['cloudServer', 'cloudKey', 'cloudDeviceId'] : ['host', 'shellyDeviceId'])], heading);
       details.append(fields);
+      window.ShadingBthome?.editor(details, device, definitions.bthome, cfg.language, changed);
       const remove = el('button', 'remove', 'Gerät entfernen');
       remove.type = 'button';
       remove.addEventListener('click', () => {
@@ -502,6 +503,7 @@
       details.append(states);
       footer.append(details, coverStateDiagram(row));
       card.append(footer);
+      window.ShadingBthome?.status(card, configuration().devices?.find(d => d.id === row.id), row, configuration().language, data.now);
       root.append(card);
     }
   }

@@ -13,3 +13,5 @@
 .scene-identity{display:flex;align-items:center;gap:12px;min-width:0}.scene-identity strong{overflow-wrap:anywhere}.scene-indicator{width:12px;height:12px;border-radius:50%;background:#626976;display:inline-block;flex:0 0 12px;box-shadow:none}.scene-indicator.active{background:#50d580;box-shadow:0 0 8px #50d58066}.scene-reset-option{display:flex;align-items:flex-start;gap:10px;margin:20px 0 8px;cursor:pointer}.scene-reset-option input{width:20px;height:20px;flex:0 0 20px;margin:1px 0;accent-color:#ad88f5}
 
 .scene-fields>.scene-dewpoint-temperature{grid-column:1}
+
+.scene-fields .scene-current-reading{font-weight:600;overflow-wrap:anywhere}.scene-current-reading[data-state=available]{color:inherit}.scene-current-reading[hidden]{display:none}

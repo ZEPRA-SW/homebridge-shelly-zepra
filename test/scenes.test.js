@@ -38,7 +38,7 @@ test('global Scene action budget consumes excess time events without retry storm
  const s=setup(Array.from({length:31},(_,i)=>rule({id:'r'+i,condition:{kind:'time',time:'13:00',days:[4]}})));await s.engine.tick();assert.equal(s.calls.length,30);const count=s.logs.length;await s.engine.tick();assert.equal(s.calls.length,30);assert.equal(s.logs.length,count);
 });
 test('observations honor device freshness and BTHome identity rather than battery component names',()=>{
- const now=100000,p={devices:{statusStore:{maxAge:30000,devices:new Map([['a',{online:true,checkedAt:now,bthome:[{id:'one',readings:[{component:'battery',values:{BatteryLevel:10}}]},{id:'two',readings:[{component:'battery',values:{BatteryLevel:90}}]}]}]])}}};
+ const now=100000,p={config:{devices:[{id:'a',bthome:[{id:'one',deviceComponent:'bthomedevice:200'},{id:'two',deviceComponent:'bthomedevice:201'}]}]},devices:{statusStore:{maxAge:30000,devices:new Map([['a',{online:true,checkedAt:now,bthome:[{id:'one',deviceComponent:'bthomedevice:200',readings:[{component:'battery',observedAt:now,values:{BatteryLevel:10}}]},{id:'two',deviceComponent:'bthomedevice:201',readings:[{component:'battery',observedAt:now,values:{BatteryLevel:90}}]}]}]])}}};
  const ref={area:'devices',deviceId:'a',sensorId:'two',component:'battery',metric:'BatteryLevel'};assert.equal(R.observe(p,ref,now).value,90);assert.equal(R.observe(p,ref,now+30001),null);p.devices.statusStore.devices.get('a').bthome[1].fault=true;assert.equal(R.observe(p,ref,now),null);
 });
 test('shading actions obey wind and recovery locks and route height/tilt through the movement queue',async()=>{

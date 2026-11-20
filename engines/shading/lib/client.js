@@ -32,16 +32,7 @@ class ShellyClient {
     const execute = async () => {
       if (method.startsWith('Cover.') || method === 'Shelly.Reboot') {
         const info = await this.request('Shelly.GetDeviceInfo', {}, { operation: method, channel: params.id });
-        const expected = this.expectedDeviceId.replace(/:/g, '');
-        const actualMac = typeof info?.mac === 'string' ? info.mac.replace(/:/g, '').toLowerCase() : '';
-        const actualId = typeof info?.id === 'string' ? info.id.toLowerCase() : '';
-        if (expected !== actualId && expected !== actualMac) {
-          const error = new Error('Shelly-Geräte-ID stimmt an dieser IP-Adresse nicht überein. Aufruf gesperrt.');
-          error.code = 'SHELLY_ID_MISMATCH';
-          error.expectedId = this.expectedDeviceId;
-          error.actualId = actualId || actualMac || 'unknown';
-          throw error;
-        }
+        this.verifyIdentity(info);
       }
       if (allowed && !allowed()) {
         const error = new Error(method === 'Shelly.Reboot' ? 'Neustart verschoben.' : 'Fahrbefehl verworfen.');
@@ -68,6 +59,49 @@ class ShellyClient {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
+    });
+    this.tail = job.catch(() => {});
+    return job;
+  }
+
+  verifyIdentity(info) {
+    const expected = this.expectedDeviceId.replace(/:/g, '');
+    const actualMac = typeof info?.mac === 'string' ? info.mac.replace(/:/g, '').toLowerCase() : '';
+    const actualId = typeof info?.id === 'string' ? info.id.toLowerCase() : '';
+    if (expected !== actualId && expected !== actualMac) {
+      const error = new Error('Shelly-Ger\u00e4te-ID stimmt an dieser IP-Adresse nicht \u00fcberein. Aufruf gesperrt.');
+      error.code = 'SHELLY_ID_MISMATCH';
+      error.expectedId = this.expectedDeviceId;
+      error.actualId = actualId || actualMac || 'unknown';
+      throw error;
+    }
+  }
+
+  snapshotComponents(configured = []) {
+    const job = this.tail.then(async () => {
+      const info = await this.request('Shelly.GetDeviceInfo', {}, { operation: 'Shelly.GetComponents' });
+      this.verifyIdentity(info);
+      const components = [], keys = new Set();
+      let total;
+      for (let offset = 0; offset < 1000;) {
+        const page = await this.request('Shelly.GetComponents', { offset, include: ['config', 'status'], dynamic_only: true });
+        if (!Array.isArray(page?.components) || !Number.isInteger(page.total) || page.total < 0 || page.total > 1000 ||
+            (total !== undefined && total !== page.total)) throw new Error('Ung\u00fcltige Komponentenliste.');
+        total = page.total;
+        for (const component of page.components) {
+          if (!component || typeof component.key !== 'string' || keys.has(component.key)) throw new Error('Ung\u00fcltige Komponentenliste.');
+          keys.add(component.key);components.push(component);
+        }
+        offset += page.components.length;
+        if (offset === total) break;
+        if (offset > total || !page.components.length) throw new Error('Unvollst\u00e4ndige Komponentenliste.');
+      }
+      for (const b of configured) if (b.buttonIndices?.length) {
+        const device = components.find(c => c.key === b.deviceComponent);
+        if (device) try { device.knownObjects = await this.request('BTHomeDevice.GetKnownObjects', { id: Number(b.deviceComponent.split(':')[1]) }); }
+        catch { device.buttonError = true; }
+      }
+      return { info, gen: 2, status: {}, settings: {}, components };
     });
     this.tail = job.catch(() => {});
     return job;

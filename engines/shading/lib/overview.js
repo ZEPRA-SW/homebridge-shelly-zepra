@@ -54,6 +54,12 @@ class Overview {
         windAlarm: state.windAlarm === true, recovering: state.recovering === true,
         pendingUntil: state.automationPendingUntil, pendingAction: state.automationPending, pausedUntil: state.pausedUntil, updatedAt: state.updatedAt,
       } : null;
+      if(device.bthome?.length){
+        result.bthome=state?.bthome??[];
+        result.bthomeCheckedAt=state?.bthomeCheckedAt??null;
+        result.bthomeMaxAge=state?.bthomeMaxAge??Math.max(30000,poll*3000+15000);
+        result.bthomeOnline=state?.bthomeOnline===true&&Number.isFinite(state.bthomeCheckedAt)&&state.bthomeCheckedAt<=now+5000&&now-state.bthomeCheckedAt<=result.bthomeMaxAge;
+      }
       result.status = stateLabel(state, now, stale);
       return result;
     });

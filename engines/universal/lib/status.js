@@ -1,5 +1,10 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path');
+const {WEATHER_METRICS}=require('./bthome-weather');
+const READING_METRICS=['AnalogValue','On','Brightness','CurrentTemperature','TargetTemperature','CurrentRelativeHumidity','CurrentAmbientLightLevel','BatteryLevel','MotionDetected','ContactSensorState','TargetHeatingCoolingState',...WEATHER_METRICS];
+const values=(reading,active)=>active?Object.fromEntries(READING_METRICS.filter(key=>Number.isFinite(reading.values?.[key])||typeof reading.values?.[key]==='boolean').map(key=>[key,reading.values[key]])):{};
+const metadata=reading=>({...((Number.isFinite(reading.observedAt)&&reading.observedAt>0)?{observedAt:reading.observedAt}:{}),...(['%','V','km/h','°','hPa','°C','mm',''].includes(reading.unit)?{unit:reading.unit}:{}),...(WEATHER_METRICS.includes(reading.metric)?{metric:reading.metric}:{})});
+const sanitizeBthome=(bthome,online)=>bthome.map(b=>({id:b.id,name:b.name,deviceComponent:b.deviceComponent,fault:!online||b.fault===true,readings:(b.readings||[]).map(r=>({component:r.component,name:r.name,type:r.type,...metadata(r),fault:!online||b.fault===true||r.fault===true,values:values(r,online&&!b.fault&&!r.fault)}))}));
 const FILE='shelly-universal-status.json';
 const target=d=>JSON.stringify([d.id,d.connection==='cloud'?'cloud:'+d.cloudServer:d.host,String((d.connection==='cloud'?d.cloudDeviceId:d.shellyDeviceId)||'').toLowerCase().replace(/:/g,'').slice(-12)]);
 class StatusStore {
@@ -12,8 +17,8 @@ class StatusStore {
     const d=this.devices.get(id);if(!d)return Promise.resolve();
     d.online=online;d.checkedAt=now;if(online)d.lastSuccessAt=now;
     d.measurements=online?measurements.map(r=>({component:r.component,...(/^(switch|relay|light|rgb|rgbw|cct|color|white):\d+$/.test(r.channel||'')?{channel:r.channel}:{}),name:r.name,values:Object.fromEntries(['Power','Energy','Voltage','Current','ReturnedEnergy','Frequency','PowerFactor','ApparentPower','ReactivePower'].filter(k=>Number.isFinite(r.values?.[k])).map(k=>[k,r.values[k]]))})):[];
-    d.readings=online?readings.map(r=>({component:r.component,name:r.name,...(['%','V'].includes(r.unit)?{unit:r.unit}:{}),values:Object.fromEntries(['AnalogValue','On','Brightness','CurrentTemperature','TargetTemperature','CurrentRelativeHumidity','CurrentAmbientLightLevel','BatteryLevel','MotionDetected','ContactSensorState','TargetHeatingCoolingState'].filter(k=>!r.fault&&(Number.isFinite(r.values?.[k])||typeof r.values?.[k]==='boolean')).map(k=>[k,r.values[k]]))})):[];
-    d.bthome=(online?bthome:d.bthome||[]).map(b=>({id:b.id,name:b.name,deviceComponent:b.deviceComponent,fault:!online||b.fault===true,readings:(b.readings||[]).map(r=>({component:r.component,name:r.name,type:r.type,fault:!online||r.fault===true,values:online&&!r.fault?Object.fromEntries(['CurrentTemperature','CurrentRelativeHumidity','CurrentAmbientLightLevel','BatteryLevel','MotionDetected','ContactSensorState'].filter(k=>Number.isFinite(r.values?.[k])||typeof r.values?.[k]==='boolean').map(k=>[k,r.values[k]])):{} }))}));
+    d.readings=online?readings.map(r=>({component:r.component,name:r.name,...metadata(r),values:values(r,!r.fault)})):[];
+    d.bthome=sanitizeBthome(online?bthome:d.bthome||[],online);
     return this.save();
   }
   save() {
@@ -33,4 +38,4 @@ async function readStatus(storage) {
     return result;
   } catch {return {devices:[]};}
 }
-module.exports={StatusStore,readStatus,target};
+module.exports={StatusStore,readStatus,target,sanitizeBthome};

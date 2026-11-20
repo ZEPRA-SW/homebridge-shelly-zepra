@@ -282,6 +282,27 @@
                       "maximum": 255
                     },
                     "description": "Optional: z.B. 0 für die erste Taste. Wird gegen GetKnownObjects geprüft. Keine Dreh-/Dreifachgesten."
+                  },
+                  "sensorType": {
+                    "title": "BTHome-Gerätetyp",
+                    "type": "string",
+                    "enum": [
+                      "blu-ht",
+                      "blu-motion",
+                      "blu-doorwindow",
+                      "blu-button",
+                      "bthome",
+                      "ws90"
+                    ],
+                    "enumNames": [
+                      "Shelly BLU H&T",
+                      "Shelly BLU Motion",
+                      "Shelly BLU Door/Window",
+                      "Shelly BLU Button / Remote",
+                      "Weitere BTHome-Sensoren",
+                      "Ecowitt WS90 Powered by Shelly"
+                    ],
+                    "default": "bthome"
                   }
                 }
               }
@@ -971,6 +992,74 @@
                   "type": "boolean",
                   "default": true,
                   "description": "Blendet Behang, Lamellen und Geräteschalter aus Apple Home aus. Status, Sonnenautomatik und Windschutz im Plugin bleiben aktiv. Speichern und Child-Bridge neu starten. Räume und Automationen können beim Einblenden neu zugeordnet werden müssen."
+                },
+                "bthome": {
+                  "title": "Manuell zugeordnete BTHome-Geräte",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "deviceComponent"
+                    ],
+                    "properties": {
+                      "id": {
+                        "title": "Dauerhafte eindeutige ID",
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "name": {
+                        "title": "Name in Apple Home",
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "deviceComponent": {
+                        "title": "BTHome-Gerätekomponente",
+                        "type": "string",
+                        "pattern": "^bthomedevice:2[0-9][0-9]$",
+                        "description": "Z.B. bthomedevice:200 beim Host P_Dimmer_Wohnen. Messsensoren werden über die MAC-Zuordnung gelesen; ihre IDs sind separat."
+                      },
+                      "staleAfter": {
+                        "title": "Veraltet nach (Sekunden)",
+                        "type": "integer",
+                        "minimum": 60,
+                        "default": 86400,
+                        "description": "Danach melden Messwerte einen Kommunikationsfehler. An das Sendeintervall des Sensors anpassen."
+                      },
+                      "buttonIndices": {
+                        "title": "BTHome-Tastenindizes",
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 255
+                        },
+                        "description": "Optional: z.B. 0 für die erste Taste. Wird gegen GetKnownObjects geprüft. Keine Dreh-/Dreifachgesten."
+                      },
+                      "sensorType": {
+                        "title": "BTHome-Gerätetyp",
+                        "type": "string",
+                        "enum": [
+                          "blu-ht",
+                          "blu-motion",
+                          "blu-doorwindow",
+                          "blu-button",
+                          "bthome",
+                          "ws90"
+                        ],
+                        "enumNames": [
+                          "Shelly BLU H&T",
+                          "Shelly BLU Motion",
+                          "Shelly BLU Door/Window",
+                          "Shelly BLU Button / Remote",
+                          "Weitere BTHome-Sensoren",
+                          "Ecowitt WS90 Powered by Shelly"
+                        ],
+                        "default": "bthome"
+                      }
+                    }
+                  }
                 }
               },
               "allOf": [
@@ -1310,6 +1399,12 @@
               },
               "deviceId": {
                 "type": "string"
+              },
+              "sensorId": {
+                "type": "string"
+              },
+              "component": {
+                "type": "string"
               }
             }
           },
@@ -1327,7 +1422,8 @@
               "area": {
                 "type": "string",
                 "enum": [
-                  "devices"
+                  "devices",
+                  "shading"
                 ]
               },
               "deviceId": {
@@ -1357,7 +1453,8 @@
               "area": {
                 "type": "string",
                 "enum": [
-                  "devices"
+                  "devices",
+                  "shading"
                 ]
               },
               "deviceId": {

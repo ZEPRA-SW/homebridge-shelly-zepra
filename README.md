@@ -4,7 +4,7 @@ Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebrid
 
 **Your Shellys in your language: Deutsch · English · Français · Español.** The four languages cover the entire interface — device settings, live status, shading, Scenes, help texts and event history — with one shared language selection.
 
-**Version: `1.1.1` — digital/analog Sensor Add-on inputs, dew-point Scene conditions and device-specific validation messages.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
+**Version `1.2.4` — WS90 weather, direct sensor selection and current values in Scenes, with consistent sensor-freshness checks.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
 
 ## Features
 
@@ -14,6 +14,7 @@ Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebrid
 - **Other Shelly devices:** supported relays, plugs, lights, inputs, energy meters, add-ons and BTHome readings, grouped by device model and channel. Plus 1 Mini, Pro 3EM and Pro 3EM-400 have separate model selections.
 - **Four complete interface languages:** German, English, French and Spanish throughout all device areas and Scenes.
 - **Scenes:** nested AND/OR conditions, confirmation durations, schedules, ordered actions, delays and intermediate conditions with timeouts.
+- **Current source feedback:** read-only sensor values, On/Off states, dim levels and cover feedback below the chosen Scene measurement; stale or unavailable feedback is clearly marked.
 - **Dew-point automation:** calculate dew point from selected temperature and relative-humidity readings, view the current result and use °C thresholds with hysteresis and confirmation durations in Scene conditions.
 - **One cloud queue:** both device areas share request spacing, coalesced reads and rate-limit cooldowns per cloud server/key combination.
 - **HomeKit visibility:** hide an individual device from Apple Home while retaining its plugin dashboard and configured automation.
@@ -47,7 +48,7 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
 
-The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.1.1.tgz` asset from this repository's release and follow [INSTALLATION.md](INSTALLATION.md).
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.2.4.tgz` asset from the [GitHub release](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.4) and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
@@ -87,6 +88,28 @@ After adding a device, save the configuration and restart the ZEPRA child bridge
 ### Languages
 
 The entire custom interface supports **German, English, French and Spanish**, including general settings, both device areas, status views, Scenes, validation messages and Scene history. Choose the language once in **General settings**. Existing Scene history is translated when displayed; device identifiers, user-defined names and automation values are preserved. Save and restart the child bridge to apply the language to runtime logs and default HomeKit labels.
+
+## BTHome sensors on a shading host
+
+Add sensor mappings directly to the existing device under **Shading → Devices → BLU / BTHome** when that Shelly operates a blind or shutter. Do not add the same physical host again under **Other Shelly devices**. Sensor reads use the existing host connection and request queue. They do not create another cover, host accessory or output controller. The BTHome readings appear in the shading status card and are available as Scene sources under the existing shading device. Sensor freshness is independent of cover feedback.
+
+This extension supports local read-only measurements and contact/motion states. BTHome button event streaming on shading hosts is not implemented; existing general-device button support is unchanged. Hiding the shading device from HomeKit also hides its attached sensor accessories while retaining plugin status and Scenes.
+
+Scene source devices are grouped by device category, with Pro devices in their own categories, and sorted by name within each category. Stored device IDs, sources and Scene settings remain unchanged. A separate **Sensors** group lists configured BTHome groups, including the WS90, and available native/Add-on sensor components directly. Select the sensor first, then its measurement; the existing Shelly host and sensor ID are assigned automatically. For direct sensors, selecting a measurement sets the appropriate numeric or state comparison. Configured BTHome groups remain visible while offline without inventing readings. Direct sensor measurement names appear first, followed by their component ID. A read-only information line displays the current value or state using existing cached status updates. It never copies the live value into a condition threshold or changes an action. Missing, faulty, stale or future-dated feedback is unavailable.
+
+## Ecowitt WS90 Powered by Shelly
+
+Configure the Shelly-compatible WS90 weather station as a BTHome device on a supported Shelly host first. In the host's plugin settings choose **Add BLU / BTHome**, select **Ecowitt WS90 Powered by Shelly** and enter the BTHome device component actually configured on that host. The station is a host-connected BTHome device, not a separate IP-controlled relay. Existing **Other BTHome sensors** mappings continue to work.
+
+The weather mapping covers wind speed, gust speed, wind direction, rain status, UV index, air pressure, reported dew point, capacitor voltage and reported precipitation, alongside battery, illumination, humidity and temperature. Object types and occurrence indices follow the [official Shelly WS90 specification](https://shelly-api-docs.shelly.cloud/docs-ble/Devices/BLU_ZB/wstation/). Wind and gust speed use km/h, converted once from Shelly's decoded m/s readings. Other measurements retain Shelly's decoded units. Reported precipitation is shown in mm without assuming an hourly or daily period.
+
+The maintainer confirmed the WS90 update from local test build `1.2.1` in practical use.
+
+Fresh decoded sensor packets remain valid when the host reports `paired: false`; pairing for direct Bluetooth access is separate from receiving broadcast measurements. Device errors, decoding errors and invalid or stale sensor values are still rejected.
+
+Each weather reading retains its BTHome component identity. Invalid, stale, missing or faulty readings remain unavailable; a valid zero remains zero. New WS90 selections use a 120-second stale limit by default. BTHome confirmation durations and intermediate Scene conditions use the sensor measurement timestamp; repeatedly polling an unchanged host cache does not count as a new confirming sample. Weather values can be viewed in the status dashboard and used as Scene conditions. Additional weather values use custom read-only HomeKit characteristics; their display depends on the HomeKit app. Apple Home does not offer standard tiles for every weather measurement.
+
+No scripts or peripherals are created on the station or its host. The plugin uses the existing configured component reads. The maintainer has confirmed the WS90 update in practical use. Automated checks cover the latest Scene editor feedback; practical coverage differs by model and function.
 
 ## Sensor Add-on inputs
 
@@ -153,9 +176,13 @@ The new ZEPRA child bridge must be paired in Apple Home. Room assignments, scene
 
 The pre-publication validation passed:
 
-- **562 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
+- **622 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
 - **170 combined browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
 - **70 Add-on editor checks**, plus four-language analog-status and dew-point editor/preview checks, including missing/faulty/stale samples and mobile layout.
+- **189 WS90 browser checks** across all four languages, covering the complete decoder/status/UI path, weather values and units, sensor identity, stale/fault handling, source timestamps and mobile layout.
+- **169 shading-BTHome browser checks** across all four languages for sensor mappings on shading hosts, grouped Scene source selection, stable device IDs, Save validation and independent sensor freshness.
+- **180 direct-sensor browser checks** across all four languages for station-to-measurement selection, automatic host assignment, matching state/numeric comparisons, offline choices, duplicate IDs and stable saved scenes.
+- **273 current-feedback browser checks** across all four languages for values and states, units, currentness, false/zero, status refresh, unchanged thresholds/actions and desktop/mobile display.
 
 Tests include real Homebridge/HAP libraries and the existing movement controller with simulated transport. They are not proof of live operation across every listed device, firmware or cloud account. Live validation of the latest Scene stages and reset behavior remains outstanding.
 
@@ -167,7 +194,7 @@ npm test
 npm run check
 ```
 
-The browser suites are `node test/ui-browser.cjs`, `node test/scenes-i18n-browser.cjs`, `node test/addon-ui-browser.cjs`, `node test/addon-overview-browser.cjs` and `node test/scene-dewpoint-browser.cjs`. It uses Microsoft Edge by default. For bundled Chromium, install it with `npx playwright install chromium`, set the `PLAYWRIGHT_CHANNEL` environment variable to `bundled`, then run the suite. The CI workflow uses bundled Chromium. The GitHub CI matrix additionally checks Node 22, 24 and 26 against both installed Homebridge versions. Node 22 has not been validated locally.
+The browser suites are `node test/ui-browser.cjs`, `node test/scenes-i18n-browser.cjs`, `node test/addon-ui-browser.cjs`, `node test/addon-overview-browser.cjs` and `node test/scene-dewpoint-browser.cjs` and `node test/ws90-browser.cjs` and `node test/shading-bthome-browser.cjs` and `node test/scene-sensor-choices-browser.cjs` and `node test/scene-current-reading-browser.cjs`. They use Microsoft Edge by default. For bundled Chromium, install it with `npx playwright install chromium`, set the `PLAYWRIGHT_CHANNEL` environment variable to `bundled`, then run the suite. The CI workflow uses bundled Chromium. The GitHub CI matrix additionally checks Node 22, 24 and 26 against both installed Homebridge versions. Node 22 has not been validated locally.
 
 ## Feedback, suggestions and bug reports
 

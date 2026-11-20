@@ -124,9 +124,10 @@
     const bdef=schema.schema.properties.devices.items.properties.bthome.items;
     for(const [index,b] of (d.bthome||[]).entries()){
       const row=card(b.name||'BLU / BTHome','bthome-settings',true);
-      const props={sensorType:def('BTHome-Gerätetyp','string',{enum:['blu-ht','blu-motion','blu-doorwindow','blu-button','bthome'],enumNames:['Shelly BLU H&T','Shelly BLU Motion','Shelly BLU Door/Window','Shelly BLU Button / Remote',t('Weitere BTHome-Sensoren')],default:'bthome'}),...bdef.properties};
+      const props={sensorType:def('BTHome-Gerätetyp','string',{enum:['blu-ht','blu-motion','blu-doorwindow','blu-button','ws90','bthome'],enumNames:['Shelly BLU H&T','Shelly BLU Motion','Shelly BLU Door/Window','Shelly BLU Button / Remote','Ecowitt WS90 Powered by Shelly',t('Weitere BTHome-Sensoren')],default:'bthome'}),...bdef.properties};
       if(d.connection==='cloud'||!['blu-button','bthome'].includes(b.sensorType||'bthome'))delete props.buttonIndices;
-      fields(row,{properties:props,required:bdef.required},b,key=>{if(key==='sensorType')render(d.id);});row.append(button('Entfernen',()=>{d.bthome.splice(index,1);render(d.id);changed();}));section.append(row);
+      if(b.sensorType==='ws90'){props.staleAfter={...props.staleAfter,default:120};hint(row,'Die Wetterstation muss auf diesem Shelly als BTHome-Gerät eingerichtet sein. Wind und Böen werden in km/h angezeigt.');hint(row,'Die WS90 sendet etwa alle 9 Sekunden. Standardmäßig gelten Messwerte nach 120 Sekunden als veraltet.');}
+      fields(row,{properties:props,required:bdef.required},b,key=>{if(key==='sensorType'){if(b.sensorType==='ws90'){if(b.staleAfter===undefined||b.staleAfter===86400)b.staleAfter=120;delete b.buttonIndices;}render(d.id);}});row.append(button('Entfernen',()=>{d.bthome.splice(index,1);render(d.id);changed();}));section.append(row);
     }
     const actions=el('div',undefined,'extension-actions');
     if(m.addon)actions.append(button('Add-on hinzufügen',()=>{d.addons=[{type:m.addon,temperature:true,humidity:true,inputId:100,...(m.addon==='pro-sensor'?{inputId2:101}:{})}];M.sync(d,false,cfg.language);render(d.id);changed();},'+ '+t('Add-on hinzufügen'),!!d.addons?.length));
@@ -161,10 +162,13 @@
       for(const r of rows){
         if(r.sensorId&&sensorGroup!==r.sensorId){sensorGroup=r.sensorId;const group=el('div',undefined,'bthome-group-heading');group.dataset.sensorId=r.sensorId;group.append(el('strong',(r.sensorName||r.sensorId)+' · ID: '+r.sensorId),el('span',r.deviceComponent));card.append(group);}
         const signal=window.ShellyOverview.signal(r,online);signal.label=t(signal.label);const line=el('div',undefined,'channel-line'),dot=el('span',undefined,'channel-lamp');line.dataset.component=r.component;line.dataset.kind=r.kind;dot.dataset.state=signal.state;dot.setAttribute('role','img');dot.setAttribute('aria-label',(r.name||r.component)+': '+signal.label);dot.title=signal.label;
-        const title=el('div',undefined,'channel-identity');title.append(el('strong',r.type==='unavailable'?t('Keine aktuellen Sensordaten'):window.ShellyOverview.title(r)));const number=r.component.split(':')[1],kind=r.kind==='output'?t('Ausgang {number}',{number}):r.kind==='input'?t('Eingang {number}',{number}):r.kind==='meter'?r.component:t('Sensor');title.append(el('span',r.kind==='sensor'?t(/^bthomesensor:/.test(r.component)?'BTHome-Sensor':'Sensor'):signal.label+' · '+kind,'channel-state'));
+        const weatherKey=window.ShellyOverview.weatherMetric(r),weather=window.ShellyOverview.weather[weatherKey],generated=r.name===r.component||!r.name;
+        const title=el('div',undefined,'channel-identity'),rowTitle=weather&&generated?t(weather[0])+' · '+r.component:r.type==='unavailable'&&generated?t('Keine aktuellen Sensordaten')+' · '+r.component:window.ShellyOverview.title(r);title.append(el('strong',rowTitle));const number=r.component.split(':')[1],kind=r.kind==='output'?t('Ausgang {number}',{number}):r.kind==='input'?t('Eingang {number}',{number}):r.kind==='meter'?r.component:t('Sensor');title.append(el('span',r.kind==='sensor'?t(/^bthomesensor:/.test(r.component)?'BTHome-Sensor':'Sensor'):signal.label+' · '+kind,'channel-state'));
         const values=el('div',undefined,'channel-metrics'),v=online&&!r.fault?r.values||{}:{};
-        if(r.sensorId&&(r.fault||r.type==='button'))metric(values,r.fault?'Unbekannt':'Ereignissensor','Status','');
+        if(r.sensorId&&(r.fault||r.type==='button'))metric(values,r.fault?'Unbekannt':'Ereignissensor',weather?weather[0]:'Status','');
         if(r.kind==='sensor'&&([0,1].includes(v.ContactSensorState)||typeof v.MotionDetected==='boolean'))metric(values,signal.label,'Zustand','');
+        if(typeof v.RainDetected==='boolean')metric(values,signal.label,'Regenstatus','');
+        for(const [key,[label,unit]]of Object.entries(window.ShellyOverview.weather))if(key!=='RainDetected'&&Number.isFinite(v[key]))metric(values,v[key],label,unit);
         if(Number.isFinite(v.Brightness))metric(values,v.Brightness,'Helligkeit','%');
         if(Number.isFinite(v.AnalogValue))metric(values,v.AnalogValue,'Analogwert',r.unit==='V'?'V':'%');
         for(const [key,label,unit] of [['CurrentTemperature','Temperatur','°C'],['TargetTemperature','Sollwert','°C'],['CurrentRelativeHumidity','Luftfeuchte','%'],['CurrentAmbientLightLevel','Helligkeit','lux'],['BatteryLevel','Batterie','%']])if(Number.isFinite(v[key]))metric(values,v[key],label,unit);

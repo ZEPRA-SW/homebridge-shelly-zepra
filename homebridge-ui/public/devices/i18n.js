@@ -394,7 +394,21 @@
     "Analoge Werte stehen im Status und als Scene-Bedingung zur Verfügung. Apple Home zeigt freie Analogwerte nicht an; kompatible HomeKit-Apps können sie auslesen.": "Analoge Werte stehen im Status und als Scene-Bedingung zur Verfügung. Apple Home zeigt freie Analogwerte nicht an; kompatible HomeKit-Apps können sie auslesen.",
     "Shelly Plus 1 Mini": "Shelly Plus 1 Mini",
     "Shelly Pro 3EM": "Shelly Pro 3EM",
-    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400"
+    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400",
+    "Windgeschwindigkeit": "Windgeschwindigkeit",
+    "Böen": "Böen",
+    "Windrichtung": "Windrichtung",
+    "Regenstatus": "Regenstatus",
+    "Regen": "Regen",
+    "Kein Regen": "Kein Regen",
+    "UV-Index": "UV-Index",
+    "Luftdruck": "Luftdruck",
+    "Taupunkt": "Taupunkt",
+    "Niederschlag": "Niederschlag",
+    "Kondensatorspannung": "Kondensatorspannung",
+    "Die Wetterstation muss auf diesem Shelly als BTHome-Gerät eingerichtet sein. Wind und Böen werden in km/h angezeigt.": "Die Wetterstation muss auf diesem Shelly als BTHome-Gerät eingerichtet sein. Wind und Böen werden in km/h angezeigt.",
+    "Ecowitt WS90 Powered by Shelly": "Ecowitt WS90 Powered by Shelly",
+    "Die WS90 sendet etwa alle 9 Sekunden. Standardmäßig gelten Messwerte nach 120 Sekunden als veraltet.": "Die WS90 sendet etwa alle 9 Sekunden. Standardmäßig gelten Messwerte nach 120 Sekunden als veraltet."
   },
   "en": {
     "Gerät „{name}“: {error}": "Device “{name}”: {error}",
@@ -788,7 +802,21 @@
     "Analoge Werte stehen im Status und als Scene-Bedingung zur Verfügung. Apple Home zeigt freie Analogwerte nicht an; kompatible HomeKit-Apps können sie auslesen.": "Analog values are available in status and as Scene conditions. Apple Home does not display generic analog values; compatible HomeKit apps can read them.",
     "Shelly Plus 1 Mini": "Shelly Plus 1 Mini",
     "Shelly Pro 3EM": "Shelly Pro 3EM",
-    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400"
+    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400",
+    "Windgeschwindigkeit": "Wind speed",
+    "Böen": "Wind gusts",
+    "Windrichtung": "Wind direction",
+    "Regenstatus": "Rain status",
+    "Regen": "Rain",
+    "Kein Regen": "No rain",
+    "UV-Index": "UV index",
+    "Luftdruck": "Air pressure",
+    "Taupunkt": "Dew point",
+    "Niederschlag": "Precipitation",
+    "Kondensatorspannung": "Capacitor voltage",
+    "Die Wetterstation muss auf diesem Shelly als BTHome-Gerät eingerichtet sein. Wind und Böen werden in km/h angezeigt.": "The weather station must be configured as a BTHome device on this Shelly. Wind and gusts are shown in km/h.",
+    "Ecowitt WS90 Powered by Shelly": "Ecowitt WS90 Powered by Shelly",
+    "Die WS90 sendet etwa alle 9 Sekunden. Standardmäßig gelten Messwerte nach 120 Sekunden als veraltet.": "The WS90 transmits about every 9 seconds. Readings are considered stale after 120 seconds by default."
   },
   "fr": {
     "Gerät „{name}“: {error}": "Appareil « {name} » : {error}",
@@ -1182,7 +1210,21 @@
     "Analoge Werte stehen im Status und als Scene-Bedingung zur Verfügung. Apple Home zeigt freie Analogwerte nicht an; kompatible HomeKit-Apps können sie auslesen.": "Les valeurs analogiques sont disponibles dans l’état et comme conditions de scène. Apple Home n’affiche pas les valeurs analogiques génériques ; les apps HomeKit compatibles peuvent les lire.",
     "Shelly Plus 1 Mini": "Shelly Plus 1 Mini",
     "Shelly Pro 3EM": "Shelly Pro 3EM",
-    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400"
+    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400",
+    "Windgeschwindigkeit": "Vitesse du vent",
+    "Böen": "Rafales",
+    "Windrichtung": "Direction du vent",
+    "Regenstatus": "État de pluie",
+    "Regen": "Pluie",
+    "Kein Regen": "Pas de pluie",
+    "UV-Index": "Indice UV",
+    "Luftdruck": "Pression atmosphérique",
+    "Taupunkt": "Point de rosée",
+    "Niederschlag": "Précipitations",
+    "Kondensatorspannung": "Tension du condensateur",
+    "Die Wetterstation muss auf diesem Shelly als BTHome-Gerät eingerichtet sein. Wind und Böen werden in km/h angezeigt.": "La station météo doit être configurée comme appareil BTHome sur ce Shelly. Le vent et les rafales sont affichés en km/h.",
+    "Ecowitt WS90 Powered by Shelly": "Ecowitt WS90 Powered by Shelly",
+    "Die WS90 sendet etwa alle 9 Sekunden. Standardmäßig gelten Messwerte nach 120 Sekunden als veraltet.": "La WS90 émet environ toutes les 9 secondes. Par défaut, les mesures sont considérées comme périmées après 120 secondes."
   },
   "es": {
     "Gerät „{name}“: {error}": "Dispositivo «{name}»: {error}",
@@ -1576,7 +1618,21 @@
     "Analoge Werte stehen im Status und als Scene-Bedingung zur Verfügung. Apple Home zeigt freie Analogwerte nicht an; kompatible HomeKit-Apps können sie auslesen.": "Los valores analógicos están disponibles en el estado y como condiciones de escena. Apple Home no muestra valores analógicos genéricos; las apps HomeKit compatibles pueden leerlos.",
     "Shelly Plus 1 Mini": "Shelly Plus 1 Mini",
     "Shelly Pro 3EM": "Shelly Pro 3EM",
-    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400"
+    "Shelly Pro 3EM-400": "Shelly Pro 3EM-400",
+    "Windgeschwindigkeit": "Velocidad del viento",
+    "Böen": "Ráfagas",
+    "Windrichtung": "Dirección del viento",
+    "Regenstatus": "Estado de lluvia",
+    "Regen": "Lluvia",
+    "Kein Regen": "Sin lluvia",
+    "UV-Index": "Índice UV",
+    "Luftdruck": "Presión atmosférica",
+    "Taupunkt": "Punto de rocío",
+    "Niederschlag": "Precipitación",
+    "Kondensatorspannung": "Tensión del condensador",
+    "Die Wetterstation muss auf diesem Shelly als BTHome-Gerät eingerichtet sein. Wind und Böen werden in km/h angezeigt.": "La estación meteorológica debe estar configurada como dispositivo BTHome en este Shelly. El viento y las ráfagas se muestran en km/h.",
+    "Ecowitt WS90 Powered by Shelly": "Ecowitt WS90 Powered by Shelly",
+    "Die WS90 sendet etwa alle 9 Sekunden. Standardmäßig gelten Messwerte nach 120 Sekunden als veraltet.": "La WS90 transmite aproximadamente cada 9 segundos. Por defecto, las lecturas se consideran obsoletas después de 120 segundos."
   }
 };
  const normalizeLanguage=language=>['de','en','fr','es'].includes(language)?language:'de';

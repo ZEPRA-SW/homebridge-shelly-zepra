@@ -1,14 +1,17 @@
 {
   "name": "homebridge-shelly-zepra",
-  "version": "1.1.1",
-  "description": "Shelly ZEPRA: Shelly devices, solar shading and Scenes with dew-point calculation. Complete German, English, French and Spanish interface. Feedback, suggestions and bug reports: pm@zepra-app.de",
+  "version": "1.2.4",
+  "description": "Shelly ZEPRA: Shelly devices, WS90 weather, solar shading and Scenes with dew-point calculation. Complete German, English, French and Spanish interface. Feedback and bug reports: pm@zepra-app.de",
   "main": "index.js",
   "license": "MIT",
   "keywords": [
     "homebridge-plugin",
     "shelly",
     "homekit",
-    "zepra"
+    "zepra",
+    "ws90",
+    "bthome",
+    "weather"
   ],
   "engines": {
     "node": "^22.0.0 || ^24.0.0 || ^26.0.0",

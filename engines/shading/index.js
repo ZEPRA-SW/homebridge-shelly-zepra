@@ -96,6 +96,7 @@ class ShellyPlatform {
         runtime.rebootState = accessory.context.dailyRebootState;
         runtime.persistReboot = state => { accessory.context.dailyRebootState = state; this.api.updatePlatformAccessories([accessory]); };
         this.devices.push(runtime);
+        this.bthomeBridge?.attach(runtime);
         used.add(uuid);
         if (fresh) this.api.registerPlatformAccessories(PLUGIN, PLATFORM, [accessory]);
         else this.api.updatePlatformAccessories([accessory]);
@@ -184,7 +185,7 @@ class ShellyPlatform {
     const publish = () => {
       this.globalControls?.refresh();
       this.statusStore.update(config.id, {
-      lastControl: accessory.context.lastControl,
+      lastControl: accessory.context.lastControl, ...runtime.bthomeStatus,
       online, checkedAt:lastGoodStatusAt, identityMismatch, position: status?.current_pos, slatPosition: supportsSlats ? status?.slat_pos : undefined,
       automationConfigured: !!automation, automationEnabled: automation?.enabled ?? false,
       shadingActive: automation?.active ?? false, manualPaused: automation?.manualPaused ?? false,
@@ -424,6 +425,10 @@ class ShellyPlatform {
         publish();
       }
       catch (error) { fail(error); }
+      if (!controller.disposed && config.bthome?.length && this.bthomeBridge) {
+        await this.bthomeBridge.poll(runtime);
+        if (!controller.disposed) publish();
+      }
       if (!controller.disposed) runtime.timer = setTimeout(runtime.poll, interval * 1000);
     };
     return runtime;

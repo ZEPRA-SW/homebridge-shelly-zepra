@@ -2,6 +2,7 @@
 const Models=require('../homebridge-ui/public/models');
 const {translate}=require('../homebridge-ui/public/i18n');
 const {virtualDescriptors}=require('./virtual');
+const {weatherReading,address}=require('./bthome-weather');
 const finite = v => typeof v === 'number' && Number.isFinite(v);
 const celsius = t => finite(t?.tC)?t.tC:finite(t?.tF)?(t.tF-32)*5/9:undefined;
 const clean = obj => Object.fromEntries(Object.entries(obj).filter(([,v])=>finite(v) || typeof v === 'boolean'));
@@ -138,16 +139,17 @@ function model(snap, config, now = Date.now()/1000) {
   for(const b of config.bthome || []) {
     const device=snap.components?.find(c=>c.key===b.deviceComponent);
     const descriptors=[];
-    if(!device?.config?.addr) {bluetooth.push({config:b, descriptors, fault:true});warnings.push('BTHome-Gerät fehlt: '+b.deviceComponent);continue;}
-    const addr=device.config.addr.toLowerCase();
+    const staleAfter=b.staleAfter??(b.sensorType==='ws90'?120:86400),addr=address(device?.config?.addr);
+    if(!/^[a-f0-9]{12}$/.test(addr)) {bluetooth.push({config:b, descriptors, fault:true});warnings.push('BTHome-Gerät fehlt: '+b.deviceComponent);continue;}
     for(const idx of b.buttonIndices || []) {
       if(device.knownObjects?.objects?.some(o=>o.obj_id===58 && o.idx===idx)) descriptors.push({key:'button:'+idx,type:'button',name:(b.name||b.id)+' '+idx,values:{}});
       else warnings.push('BTHome-Taste nicht bestätigt: '+b.deviceComponent+' idx '+idx);
     }
-    for(const c of snap.components.filter(c=>c.key.startsWith('bthomesensor:') && c.config?.addr?.toLowerCase()===addr)) {
+    for(const c of snap.components.filter(c=>c.key.startsWith('bthomesensor:') && address(c.config?.addr)===addr)) {
+      const weather=weatherReading(c,now,staleAfter);if(weather){descriptors.push(weather);continue;}
       const v=c.status?.value, obj=c.config.obj_id;
       const ts=c.status?.last_updated_ts ?? c.status?.last_update_ts;
-      const fault=!finite(ts) || now-ts>(b.staleAfter || 86400);
+      const fault=!finite(ts)||ts<=0||ts>now+5||now-ts>staleAfter||c.status?.is_valid===false||!!c.status?.errors?.length;
       const types={1:['battery','BatteryLevel'],2:['temperature','CurrentTemperature'],69:['temperature','CurrentTemperature'],3:['humidity','CurrentRelativeHumidity'],46:['humidity','CurrentRelativeHumidity'],5:['lux','CurrentAmbientLightLevel'],33:['motion','MotionDetected'],26:['contact','ContactSensorState'],45:['contact','ContactSensorState']};
       const pair=types[obj];
       if(obj===58) {const button=descriptors.find(d=>d.key==='button:'+c.config.idx);if(button)button.eventComponent=c.key;}
@@ -159,11 +161,12 @@ function model(snap, config, now = Date.now()/1000) {
       if(pair[0]==='lux') value=Math.max(.0001,value);
       const values={[pair[1]]:value};
       if(pair[0]==='battery') Object.assign(values,{StatusLowBattery:v<=20?1:0,ChargingState:2});
-      descriptors.push({key:c.key,type:pair[0],name:c.config.name||c.key,values,fault});
+      descriptors.push({key:c.key,type:pair[0],name:c.config.name||c.key,values,fault,...(finite(ts)&&ts>0?{observedAt:ts*1000}:{})});
     }
     const ds=device.status || {}, ts=ds.last_updated_ts ?? ds.last_update_ts;
-    if(finite(ds.battery) && !descriptors.some(d=>d.type==='battery')) descriptors.push({key:'battery',type:'battery',name:t('Batterie'),values:{BatteryLevel:ds.battery,StatusLowBattery:ds.battery<=20?1:0,ChargingState:2},fault:!finite(ts)||now-ts>(b.staleAfter||86400)});
-    bluetooth.push({config:b,descriptors,fault:!descriptors.length || !!ds.errors?.length});
+    if(finite(ds.battery) && !descriptors.some(d=>d.type==='battery')) descriptors.push({key:'battery',type:'battery',name:t('Batterie'),values:{BatteryLevel:ds.battery,StatusLowBattery:ds.battery<=20?1:0,ChargingState:2},...(finite(ts)&&ts>0?{observedAt:ts*1000}:{}),fault:!finite(ts)||ts<=0||ts>now+5||now-ts>staleAfter});
+    // Passive BTHome beacons deliver decoded readings without a paired GATT connection.
+    bluetooth.push({config:b,descriptors,fault:!descriptors.length||!!ds.errors?.length});
   }
   result.push(...virtualDescriptors(snap,config,warnings));
   return {descriptors:result,bluetooth,warnings};
