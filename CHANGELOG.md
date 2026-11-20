@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.5
+
+- Declare HomeKit/HAP support with the `supports-hap` keyword.
+- Keep Homebridge only in development dependencies; installations use the existing Homebridge host without automatically installing a peer copy.
+- Check transport declarations, dependency placement and package/lockfile versions before release.
+- Retain the WS90, sensor-selection and Scene current-value improvements from 1.2.4.
+
 ## 1.0.3
 
 - Validate the shared time zone before either device engine starts, preventing an uncaught scheduled-reboot initialization error.

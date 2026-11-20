@@ -4,7 +4,7 @@ Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebrid
 
 **Your Shellys in your language: Deutsch · English · Français · Español.** The four languages cover the entire interface — device settings, live status, shading, Scenes, help texts and event history — with one shared language selection.
 
-**Version `1.2.4` — WS90 weather, direct sensor selection and current values in Scenes, with consistent sensor-freshness checks.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
+**Version `1.2.5` — HomeKit transport metadata and dependency corrections for Homebridge verification, including the WS90 and Scene improvements from 1.2.4.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
 
 ## Features
 
@@ -48,7 +48,7 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
 
-The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.2.4.tgz` asset from the [GitHub release](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.4) and follow [INSTALLATION.md](INSTALLATION.md).
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.2.5.tgz` asset from the [GitHub release](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.5) and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
