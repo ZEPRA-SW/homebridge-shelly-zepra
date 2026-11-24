@@ -8,9 +8,9 @@ test('migration preserves both groups, locations and credentials without changin
  const result=merge(shading,general);assert.equal(result.platform,'ShellyZepra');assert.equal(result.shading.latitude,48);assert.equal(result.devices[0].id,'light');assert.equal(result.shading.devices[0].id,'blind');assert.equal(result.devices[0].password,'PRIVATE-EXAMPLE');assert.equal(result._bridge,undefined);assert.equal(result.shading._bridge,undefined);assert.ok(shading._bridge);assert.equal(general.devices.length,1);
 });
 test('the same physical Shelly in both areas is rejected, but dual cover channels are valid',()=>{
- assert.throws(()=>validateGroups({devices:[d],shading:{devices:[{...cover,shellyDeviceId:d.shellyDeviceId}]}}),/zugleich/);
+ assert.throws(()=>validateGroups({devices:[d],shading:{devices:[{...cover,shellyDeviceId:d.shellyDeviceId}]}}),/both shading/);
  assert.doesNotThrow(()=>validateGroups({devices:[],shading:{devices:[{...cover,coverId:0},{...cover,id:'blind-two',coverId:1}]}}));
- assert.throws(()=>validateGroups({devices:[],shading:{devices:[cover,{...cover,id:'duplicate'}]}}),/doppelt/);
+ assert.throws(()=>validateGroups({devices:[],shading:{devices:[cover,{...cover,id:'duplicate'}]}}),/Shading channel configured twice/);
 });
 test('combined schema compiles and validates the public example with separate shading settings',()=>{
  const Ajv=require('ajv'),ajv=new Ajv({strict:false});ajv.addFormat('password',()=>true);ajv.addFormat('time',()=>true);

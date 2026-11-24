@@ -231,7 +231,7 @@ test('rejected cloud height command leaves no deferred tilt or stale height targ
 test('cloud staged arrival is not mistaken for a manual override while tilt is pending',async()=>{
   const {SunAutomation,solarConfig}=require('../lib/solar');
   const f=fixture();f.controller.client.separateSlatCommands=true;
-  const auto=new SunAutomation(solarConfig({}, {sunAutomation:{enabled:true}}),f.controller);
+  const auto=new SunAutomation(solarConfig({latitude:52.52,longitude:13.405}, {sunAutomation:{enabled:true}}),f.controller);
   auto.lastTarget={pos:80,slat_pos:30};auto.lastObserved={current_pos:20,slat_pos:50,state:'stopped'};
   f.controller.waitingSlat={value:30,expectedPos:80};
   auto.observe({current_pos:80,slat_pos:50,state:'stopped'});assert.equal(auto.manualPaused,false);

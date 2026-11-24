@@ -7,6 +7,7 @@ async function start(){
  const {HomebridgePluginUiServer,RequestError}=await import(require('node:url').pathToFileURL(require.resolve('@homebridge/plugin-ui-utils')).href);
  class UiServer extends HomebridgePluginUiServer{
   constructor(){super();const overview=new Overview();
+   this.onRequest('/defaults',()=>{const settings=require('./public/shared-settings'),timeZone=settings.systemTimeZone();return {timeZone,timeZones:settings.timeZones(timeZone)};});
    this.onRequest('/ui-document',async payload=>{try{return await uiDocument(payload?.area);}catch(error){throw new RequestError(error.message);}});
    this.onRequest('/scene-data',async()=>{let scenes={states:{}};try{scenes=JSON.parse(await require('node:fs/promises').readFile(require('node:path').join(this.homebridgeStoragePath,'shelly-zepra-scenes.json'),'utf8'));}catch{}const devices=await readStatus(this.homebridgeStoragePath);return {devices:devices.devices,devicesMaxAge:devices.maxAge,shading:await loadStatus(this.homebridgeStoragePath),states:scenes.states||{}};});
    this.onRequest('/status',()=>readStatus(this.homebridgeStoragePath));

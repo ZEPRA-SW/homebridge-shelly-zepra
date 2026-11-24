@@ -4,20 +4,20 @@ const assert = require('node:assert/strict');
 const { solarConfig, SunAutomation, sunExposure } = require('../lib/solar');
 const { dailyPeriods, dayBounds } = require('../lib/timeline');
 const make = extra => ({ sunAutomation: { enabled:true, startOffsetMinutes:0, endOffsetMinutes:0, ...extra }, deviceType:'roller' });
-const day = (extra = {}, global = {}, date = '2026-06-21', zone='Europe/Berlin') => dailyPeriods(global,make(extra),date,zone);
+const day = (extra = {}, global = {latitude:52.52,longitude:13.405}, date = '2026-06-21', zone='Europe/Berlin') => dailyPeriods(global,make(extra),date,zone);
 
 test('old shared values migrate independently without changing their units',()=>{
-  const cfg=solarConfig({}, {sunAutomation:{enabled:true,delaySeconds:300,halfAngle:65}});
+  const cfg=solarConfig({latitude:52.52,longitude:13.405}, {sunAutomation:{enabled:true,delaySeconds:300,halfAngle:65}});
   assert.equal(cfg.startOffsetSeconds,300);assert.equal(cfg.endOffsetSeconds,300);
   assert.equal(cfg.leftAngle,65);assert.equal(cfg.rightAngle,65);
-  const edited=solarConfig({},make({delaySeconds:300,halfAngle:65,startOffsetMinutes:-10,endOffsetMinutes:5,leftAngle:20}));
+  const edited=solarConfig({latitude:52.52,longitude:13.405},make({delaySeconds:300,halfAngle:65,startOffsetMinutes:-10,endOffsetMinutes:5,leftAngle:20}));
   assert.equal(edited.startOffsetSeconds,-600);assert.equal(edited.endOffsetSeconds,300);
   assert.equal(edited.leftAngle,20);assert.equal(edited.rightAngle,65);
-  for(const extra of [{startOffsetMinutes:-121},{endOffsetMinutes:121},{leftAngle:-1},{rightAngle:90},{startOffsetMinutes:'-10'}])assert.throws(()=>solarConfig({},make(extra)));
+  for(const extra of [{startOffsetMinutes:-121},{endOffsetMinutes:121},{leftAngle:-1},{rightAngle:90},{startOffsetMinutes:'-10'}])assert.throws(()=>solarConfig({latitude:52.52,longitude:13.405},make(extra)));
 });
 
 test('left and right solar limits work independently, including north wrap and exit hysteresis',()=>{
-  const cfg=solarConfig({},make({orientation:0,leftAngle:20,rightAngle:60}));
+  const cfg=solarConfig({latitude:52.52,longitude:13.405},make({orientation:0,leftAngle:20,rightAngle:60}));
   assert.equal(sunExposure({azimuth:345,elevation:20},cfg,false),true);
   assert.equal(sunExposure({azimuth:335,elevation:20},cfg,false),false);
   assert.equal(sunExposure({azimuth:55,elevation:20},cfg,false),true);
@@ -37,7 +37,7 @@ for(const startOffsetMinutes of [-10,10])for(const endOffsetMinutes of [-15,15])
   let now=shifted.start-60000;
   const sent=[],status={state:'stopped',current_pos:100};
   const controller={async move(target,allowed){if(allowed())sent.push(target);}};
-  const cfg=solarConfig({},make(offsets));const auto=new SunAutomation(cfg,controller,{},()=>{},()=>now);
+  const cfg=solarConfig({latitude:52.52,longitude:13.405},make(offsets));const auto=new SunAutomation(cfg,controller,{},()=>{},()=>now);
   await auto.tick(status);assert.equal(sent.length,0);
   now=shifted.start;await auto.tick(status);assert.deepEqual(sent,[{pos:30}]);
   status.current_pos=30;now=shifted.end-60000;await auto.tick(status);assert.equal(sent.length,1);
@@ -46,7 +46,7 @@ for(const startOffsetMinutes of [-10,10])for(const endOffsetMinutes of [-15,15])
 }
 
 test('early explicit enable remains active before a delayed start and pause lasts until shifted period end',async()=>{
-  const cfg=solarConfig({},make({startOffsetMinutes:10,endOffsetMinutes:-10}));
+  const cfg=solarConfig({latitude:52.52,longitude:13.405},make({startOffsetMinutes:10,endOffsetMinutes:-10}));
   const raw=day().intervals[0],shifted=day({startOffsetMinutes:10,endOffsetMinutes:-10}).intervals[0];
   let now=raw.start;const sent=[],status={state:'stopped',current_pos:100};
   const controller={async move(target,allowed){if(allowed())sent.push(target);}};
@@ -66,7 +66,7 @@ test('shifted intervals clip across midnight and DST days without losing the pre
   assert.equal(next.intervals[0].start,next.start);
   assert.ok(next.intervals[0].end>next.start);
   for(const date of ['2026-03-29','2026-10-25']){
-    const d=day({startOffsetMinutes:-120,endOffsetMinutes:120},{},date);
+    const d=day({startOffsetMinutes:-120,endOffsetMinutes:120},{latitude:52.52,longitude:13.405},date);
     assert.deepEqual({start:d.start,end:d.end},dayBounds(date,'Europe/Berlin'));
     assert.ok(d.intervals.every(p=>p.start>=d.start&&p.end<=d.end&&p.end>p.start));
   }
@@ -75,14 +75,14 @@ test('shifted intervals clip across midnight and DST days without losing the pre
 test('crossed start and end shifts suppress an empty shading window',async()=>{
   const extra={leftAngle:5,rightAngle:5,startOffsetMinutes:120,endOffsetMinutes:-120};
   assert.deepEqual(day(extra).intervals,[]);
-  const cfg=solarConfig({},make(extra));const sent=[];
+  const cfg=solarConfig({latitude:52.52,longitude:13.405},make(extra));const sent=[];
   const auto=new SunAutomation(cfg,{async move(t,a){if(a())sent.push(t);}},{},()=>{},()=>Date.parse('2026-06-21T11:30:00Z'));
   await auto.tick({state:'stopped',current_pos:100});assert.deepEqual(sent,[]);
 });
 
 
 test('manual early start survives restart without executing a premature end action',async()=>{
-  const cfg=solarConfig({},make({startOffsetMinutes:10,endOffsetMinutes:0,endBehavior:'open'}));
+  const cfg=solarConfig({latitude:52.52,longitude:13.405},make({startOffsetMinutes:10,endOffsetMinutes:0,endBehavior:'open'}));
   let now=day().intervals[0].start;let saved;const sent=[];
   const controller={async move(t,a){if(a())sent.push(t);}};
   const auto=new SunAutomation(cfg,controller,{},s=>{saved=s;},()=>now);
@@ -95,7 +95,7 @@ test('manual early start survives restart without executing a premature end acti
 
 test('negative offsets never bypass wind, recovery, errors or manual pause',async()=>{
   const extra={startOffsetMinutes:-10,endOffsetMinutes:-10};
-  const cfg=solarConfig({},make(extra));const now=day(extra).intervals[0].start;
+  const cfg=solarConfig({latitude:52.52,longitude:13.405},make(extra));const now=day(extra).intervals[0].start;
   for(const flag of ['windAlarm','recovering','recoveryFailed','manualPaused']){
     const sent=[],controller={async move(t,a){if(a())sent.push(t);}};
     const auto=new SunAutomation(cfg,controller,{},()=>{},()=>now);

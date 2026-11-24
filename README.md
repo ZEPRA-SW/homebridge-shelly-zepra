@@ -1,10 +1,12 @@
 # Shelly ZEPRA for Homebridge
 
+[![Verified by Homebridge](https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&style=for-the-badge&logoColor=%23FFFFFF&logo=homebridge)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+
 Shelly ZEPRA brings supported Shelly devices and solar shading into one Homebridge bridge. It provides separate device dashboards, local Scene automation with dew-point calculation, and a shared queue for Shelly Cloud requests.
 
 **Your Shellys in your language: Deutsch · English · Français · Español.** The four languages cover the entire interface — device settings, live status, shading, Scenes, help texts and event history — with one shared language selection.
 
-**Version `1.2.5` — HomeKit transport metadata and dependency corrections for Homebridge verification, including the WS90 and Scene improvements from 1.2.4.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. This project does not claim Homebridge verification or Shelly endorsement.
+**Version `1.2.8` — Consistent Homebridge light/dark appearance with readable controls, status values and Scene editors; retains the local polling improvements from 1.2.7.** Device and firmware capabilities vary. The latest Scene stages and reset behavior have automated coverage, but still need live device testing. Verified by Homebridge. This does not imply Shelly endorsement or testing of every device model.
 
 ## Features
 
@@ -48,7 +50,7 @@ Cloud access has additional restrictions: thermostat control, virtual components
 
 Install **homebridge-shelly-zepra** from the **Plugins** tab in Homebridge UI. Search for the exact package name, install it, then restart Homebridge through the web interface. New-package search indexing may take time.
 
-The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.2.5.tgz` asset from the [GitHub release](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.5) and follow [INSTALLATION.md](INSTALLATION.md).
+The package is also available on [npm](https://www.npmjs.com/package/homebridge-shelly-zepra). For manual installation, download the `homebridge-shelly-zepra-1.2.8.tgz` asset from the [GitHub release](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.8) and follow [INSTALLATION.md](INSTALLATION.md).
 
 The package has no installation hooks that enable or disable other plugins or rewrite the Homebridge configuration.
 
@@ -73,7 +75,7 @@ A minimal platform block is:
 }
 ```
 
-General devices are stored in `devices`; shading devices are stored in `shading.devices`. Configure the actual coordinates and time zone before enabling solar automation. The example configuration contains demonstration defaults, not a detected location.
+General devices are stored in `devices`; shading devices are stored in `shading.devices`. Configure the actual coordinates and time zone before enabling solar automation. The time-zone dropdown initially selects the Homebridge host system zone, not the browser zone; an explicitly saved zone is retained. Choose the installation site’s zone if the Homebridge host uses a different one. The selected zone applies to the daily overview, Scene schedules and scheduled reboots, including daylight-saving changes. Coordinates determine solar geometry; a time zone is not inferred from them. New configurations and the public example leave latitude and longitude empty. Enter your own installation coordinates before enabling solar automation; they are required for solar automation, not for manual shading or other devices. Zero coordinates are valid. Existing explicit coordinates are retained.
 
 A physical Shelly cannot be configured in both device areas at the same time. Multiple cover channels of one device are configured as separate shading entries. Keep permanent plugin IDs unique and stable. A cover ID identifies a channel, not the device hardware.
 
@@ -87,7 +89,7 @@ After adding a device, save the configuration and restart the ZEPRA child bridge
 
 ### Languages
 
-The entire custom interface supports **German, English, French and Spanish**, including general settings, both device areas, status views, Scenes, validation messages and Scene history. Choose the language once in **General settings**. Existing Scene history is translated when displayed; device identifiers, user-defined names and automation values are preserved. Save and restart the child bridge to apply the language to runtime logs and default HomeKit labels.
+The entire custom interface supports **German, English, French and Spanish**, including general settings, both device areas, status views, Scenes, validation messages and Scene history. New configurations default to English. Choose the language once in **General settings**. An explicitly saved German, English, French or Spanish selection is retained. Existing Scene history is translated when displayed; device identifiers, user-defined names and automation values are preserved. Save and restart the child bridge to apply the language to runtime logs and default HomeKit labels.
 
 ## BTHome sensors on a shading host
 
@@ -174,10 +176,13 @@ The new ZEPRA child bridge must be paired in Apple Home. Room assignments, scene
 
 ## Testing
 
-The pre-publication validation passed:
+The UI-only 1.2.8 update passed **197 light-mode and 196 dark-mode browser checks**, plus **45 theme-fallback checks** and **16 installation-default checks**, with simulated Homebridge host styles, both embedded areas, Scene editing, text contrast and desktop/mobile layouts. Syntax and package metadata checks also passed. These tests use Node 26.13.0 and Microsoft Edge; live Homebridge display confirmation remains a user test.
 
-- **622 automated tests** with Node 24.22.3 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
-- **170 combined browser checks** using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
+Earlier validation of the unchanged transport/automation baseline and existing features passed:
+
+- **649 automated tests** with Node 24.22.1 / Homebridge 1.11.1 and Node 26.13.0 / Homebridge 2.5.0.
+- **16 new-installation/defaults browser checks**, including an overseas Homebridge zone with a different browser zone, blank site fields, zero coordinates, conditional requirements, saved settings, four-language help and mobile layout.
+- **170 combined browser checks** before the additional 1.2.8 theme checks, using simulated Homebridge UI data, including desktop/mobile layout and the Homebridge URL/CSP restrictions.
 - **70 Add-on editor checks**, plus four-language analog-status and dew-point editor/preview checks, including missing/faulty/stale samples and mobile layout.
 - **189 WS90 browser checks** across all four languages, covering the complete decoder/status/UI path, weather values and units, sensor identity, stale/fault handling, source timestamps and mobile layout.
 - **169 shading-BTHome browser checks** across all four languages for sensor mappings on shading hosts, grouped Scene source selection, stable device IDs, Save validation and independent sensor freshness.
@@ -207,3 +212,13 @@ Do not post cloud keys, passwords, full Homebridge backups or unredacted configu
 ## License
 
 [MIT](LICENSE).
+
+## Local polling and timeout observation
+
+Local cover polling verifies the hardware ID once per read-only batch and always requests live position feedback. Local configuration/settings may be reused for up to 60 seconds; they are invalidated after failures, relevant identity/firmware/profile changes and plugin-issued mutations/reboots. External configuration changes may therefore take up to one minute to appear. General-device status and BTHome measurement timestamps remain fresh and are not extended by a configuration cache.
+
+Every movement, output or reboot command still verifies the expected device freshly. Mutations are never automatically replayed. The existing eight-second request deadline remains unchanged. Safe cover reads retain at most one retry; unsuccessful reads remain unavailable rather than being presented as live cached status.
+
+Recurring local polling is spread using a deterministic per-device delay of up to 15% of the configured interval, capped at three seconds, after each completed poll. It never polls earlier than requested. The initial poll is immediate. Cloud polling and shared cloud scheduling are unchanged.
+
+This reduces local request volume; it is not proof that the underlying network/device timeout cause has been resolved. For a practical comparison, keep the configured status interval and other polling systems unchanged, run the update for about 24 hours and compare logs and actual control behavior. General-device timeout logs now identify the failed request and whether it failed while requesting or reading the response body, without exposing credentials.

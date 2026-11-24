@@ -1,6 +1,7 @@
 'use strict';
 const { createHash, randomBytes } = require('node:crypto');
 const { hostURL, matches } = require('./config');
+const {diagnosedError}=require('../../shading/lib/rpc-diagnostics');
 const {KEY:VIRTUAL_KEY,canWrite}=require('./virtual');
 const sha = s => createHash('sha256').update(s).digest('hex');
 const RPC_WRITES = /^(?:(Switch|Light|RGB|RGBW|CCT|Boolean)\.Set|Button\.Trigger|Thermostat\.SetConfig)$/;
@@ -17,8 +18,9 @@ function digestHeader(a, uri, opaque) {
   return 'Digest ' + Object.entries({...a, uri, qop: 'auth', ...(opaque ? {opaque} : {})}).map(([k,v]) => k + '=' + (['nc','algorithm','qop'].includes(k) ? v : quote(v))).join(', ');
 }
 class Client {
-  constructor(config, fetcher = fetch) {
+  constructor(config, fetcher = fetch, options = {}) {
     this.config = config; this.base = hostURL(config.host); this.fetcher = fetcher;
+    this.clock=options.now??(()=>performance.now());this.settingsCache=null;this.identitySignature=null;
     this.sequence = 0; this.count = 0; this.challenge = null; this.tail = Promise.resolve();
   }
   queue(fn) { const p = this.tail.then(fn); this.tail = p.catch(() => {}); return p; }
@@ -28,24 +30,27 @@ class Client {
       const headers = {'Content-Type': 'application/json'};
       if (this.gen === 1 && this.config.password) headers.Authorization = 'Basic ' + Buffer.from((this.config.username || 'admin') + ':' + this.config.password).toString('base64');
       else if (this.challenge) headers.Authorization = digestHeader(digest(this.challenge, this.config.password, method, path, ++this.count), path, this.challenge.opaque);
-      let r;
-      try { r = await this.fetcher(new URL(path, this.base), {method, headers, ...(body ? {body: JSON.stringify(body)} : {}), signal: AbortSignal.timeout(8000), redirect: 'error'}); }
-      catch { throw new Error('Shelly nicht erreichbar oder Zeitlimit überschritten.'); }
+      let r;const started=performance.now(),signal=AbortSignal.timeout(8000),context={method:body?.method??method+' '+new URL(path,this.base).pathname,operation:body?.method??method+' '+new URL(path,this.base).pathname,host:this.base.host,timeoutMs:8000,attempt:attempt+1};
+      const diagnose=(error,phase)=>diagnosedError(error,{...context,elapsedMs:Math.round(performance.now()-started),phase},signal);
+      const readBody=async(json=false)=>{try{return await (json?r.json():r.arrayBuffer());}catch(error){throw diagnose(error,'response-body');}};
+      try { r = await this.fetcher(new URL(path, this.base), {method, headers, ...(body ? {body: JSON.stringify(body)} : {}), signal, redirect: 'error'}); }
+      catch(error) { throw diagnose(error,'request'); }
       if (r.status === 401 && attempt === 0 && this.gen !== 1) {
         const header = r.headers.get('www-authenticate') || '', fields = {};
-        if (/^Basic /i.test(header) && path==='/shelly') {await r.arrayBuffer();this.gen=1;continue;}
+        if (/^Basic /i.test(header) && path==='/shelly') {await readBody();this.gen=1;continue;}
         for (const m of header.matchAll(/(\w+)=(?:"([^"]*)"|([^,\s]+))/g)) fields[m[1]] = m[2] ?? m[3];
-        await r.arrayBuffer();
+        await readBody();
         if (!/^Digest /i.test(header) || !fields.qop?.split(',').map(x=>x.trim()).includes('auth')) throw new Error('Authentifizierung fehlgeschlagen.');
         this.challenge = fields; this.count = 0; continue;
       }
-      if (!r.ok) { await r.arrayBuffer(); throw new Error('Shelly HTTP-Fehler ' + r.status); }
-      return r.json();
+      if (!r.ok) { await readBody(); throw new Error('Shelly HTTP-Fehler ' + r.status); }
+      return readBody(true);
     }
     throw new Error('Authentifizierung fehlgeschlagen.');
   }
   reboot(due=()=>true) {
     return this.queue(async()=>{
+      this.settingsCache=null;
       if(this.config.rebootEnabled!==true)throw new Error('Automatischer Neustart nicht aktiviert.');
       if(!due())throw new Error('Neustartzeit verstrichen.');
       await this.identify();
@@ -66,21 +71,24 @@ class Client {
     const wall=/^wall(?:-x2|-xl)?$/.test(this.config.modelId||'')||/^shellywalldisplay-/i.test(this.config.shellyDeviceId||'');
     if(wall)this.gen=2;
     const info = wall?await this.rpc('Shelly.GetDeviceInfo'):await this.http('/shelly');
-    if (!matches(info, this.config.shellyDeviceId)) throw new Error('Shelly-Geräte-ID stimmt an dieser IP nicht überein. Zugriff gesperrt.');
+    if (!matches(info, this.config.shellyDeviceId)){this.settingsCache=null;throw new Error('Shelly-Geräte-ID stimmt an dieser IP nicht überein. Zugriff gesperrt.');}
+    const signature=JSON.stringify([info.mac,info.id,info.gen,info.fw_id??info.fw??info.ver??'',info.profile,info.app]);if(this.identitySignature!==signature)this.settingsCache=null;this.identitySignature=signature;
     this.gen = info.gen >= 2 || info.app === 'WallDisplay' ? 2 : 1;
     if (this.config.generation === 'rpc') this.gen = 2;
     return info;
   }
+  async readSettings(){const now=this.clock(),cached=this.settingsCache;if(cached&&now>=cached.at&&now-cached.at<60000)return structuredClone(cached.value);const value=this.gen===1?await this.http('/settings'):await this.rpc('Shelly.GetConfig');if(value&&typeof value==='object')this.settingsCache={at:this.clock(),value:structuredClone(value)};return value;}
   async snapshot() {
     return this.queue(async () => {
+     try {
       const info = await this.identify();
       if (this.gen === 1) {
         const status = await this.http('/status');
-        const settings = await this.http('/settings');
+        const settings = await this.readSettings();
         return {info, gen: 1, status, settings};
       }
       const status = await this.rpc('Shelly.GetStatus');
-      const settings = await this.rpc('Shelly.GetConfig');
+      const settings = await this.readSettings();
       const components = [];let bthomeError,virtualError;
       if (this.config.bthome?.length||this.config.virtualComponents?.some(v=>v.enabled!==false)) {
         try {
@@ -98,10 +106,12 @@ class Client {
         }
       }
       return {info, gen: 2, status, settings, components,bthomeError,virtualError};
+     }catch(error){this.settingsCache=null;throw error;}
     });
   }
   write(component, values, allowed=()=>true) {
     return this.queue(async () => {
+      this.settingsCache=null;
       if(!allowed())throw Error('Scene-Freigabe beendet.');
       const verifiedInfo=await this.identify();
       if(!allowed())throw Error('Scene-Freigabe beendet.');

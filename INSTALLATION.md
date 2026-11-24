@@ -17,17 +17,17 @@ Install through Homebridge UI using the npm package, or use the GitHub release a
 If the new package is not indexed in search yet, use the GitHub release archive below. On installations using `/var/lib/homebridge`, the Homebridge web terminal can also install the exact npm release:
 
 ```bash
-npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.2.5
+npm install --prefix /var/lib/homebridge homebridge-shelly-zepra@1.2.8
 ```
 
 ## Install the release archive
 
-1. Download `homebridge-shelly-zepra-1.2.5.tgz` from the [GitHub release assets](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.5).
+1. Download `homebridge-shelly-zepra-1.2.8.tgz` from the [GitHub release assets](https://github.com/ZEPRA-SW/homebridge-shelly-zepra/releases/tag/v1.2.8).
 2. Copy that archive to `/tmp/` on the Homebridge host using your usual SSH/SFTP file transfer.
 3. In the **Homebridge web terminal** on an installation using `/var/lib/homebridge`, run:
 
    ```bash
-   npm install --prefix /var/lib/homebridge /tmp/homebridge-shelly-zepra-1.2.5.tgz
+   npm install --prefix /var/lib/homebridge /tmp/homebridge-shelly-zepra-1.2.8.tgz
    ```
 
 4. Restart Homebridge **through the Homebridge web interface**. The installation command contains no restart command.
@@ -78,3 +78,13 @@ Pair ZEPRA as a new child bridge. Existing room assignments, HomeKit scenes/auto
 Disable the ZEPRA child bridge in Homebridge, re-enable the previous plugin/control path and restart Homebridge through its web interface. ZEPRA does not rewrite those older platform blocks. Review any changes made in Apple Home separately.
 
 To roll back only the ZEPRA version, reinstall the earlier release archive using the same installation method and your backed-up configuration. Configuration compatibility should be checked before downgrading.
+
+## First configuration
+
+New configurations use English. Existing explicit language choices remain unchanged. Latitude and longitude start empty: enter the actual site before enabling solar automation. Manual shading and other devices do not require a solar site.
+
+Select the installation time zone in General settings. The initial selection comes from the Homebridge host, not the browser; an existing explicit time zone remains selected. Save configuration changes and restart the child bridge through Homebridge UI. No sudo or automatic reboot command is needed.
+
+## Timeout observation with 1.2.8
+
+Keep the current status interval for the comparison. Recurring local polls add a bounded delay of up to three seconds; positions and sensor readings are still fetched live. Observe for about 24 hours and retain the log. Local configuration/settings can take up to 60 seconds to reflect external changes. The update reduces request volume but does not establish a fix for network/device outages.

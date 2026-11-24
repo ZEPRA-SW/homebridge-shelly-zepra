@@ -26,7 +26,7 @@
           "Français",
           "Español"
         ],
-        "default": "de"
+        "default": "en"
       },
       "pollInterval": {
         "title": "Statusintervall (Sekunden)",
@@ -1096,21 +1096,19 @@
             "type": "number",
             "minimum": -89.9,
             "maximum": 89.9,
-            "default": 52.52,
-            "description": "Für Berlin-Zentrum: ungefähr 52.52° Nord. Für genaue Werte Standort anpassen."
+            "description": "Breitengrad des eigenen Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; der Standort wird nicht automatisch erkannt."
           },
           "longitude": {
             "title": "Längengrad",
             "type": "number",
             "minimum": -180,
             "maximum": 180,
-            "default": 13.405,
-            "description": "Für Berlin-Zentrum: ungefähr 13.405° Ost."
+            "description": "Längengrad desselben Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; keine Beispielkoordinaten übernehmen."
           },
           "timeZone": {
-            "title": "Zeitzone für die Tagesübersicht",
+            "title": "Zeitzone",
             "type": "string",
-            "default": "Europe/Berlin"
+            "description": "Für neue Konfigurationen wird die Systemzeitzone der Homebridge vorausgewählt. Passende Zeitzone für den Standort wählen; sie gilt für Tagesübersicht, Scenes und geplante Neustarts."
           },
           "language": {
             "title": "Sprache",
@@ -1127,7 +1125,7 @@
               "Français",
               "Español"
             ],
-            "default": "de"
+            "default": "en"
           },
           "globalControls": {
             "title": "Globale Schalter in Apple Home",

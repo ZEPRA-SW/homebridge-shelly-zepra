@@ -85,13 +85,13 @@ test('daily timeline follows local DST day boundaries and clips intervals', () =
   assert.equal((dayBounds('2026-03-29', 'Europe/Berlin').end - dayBounds('2026-03-29', 'Europe/Berlin').start) / 3600000, 23);
   assert.equal((dayBounds('2026-10-25', 'Europe/Berlin').end - dayBounds('2026-10-25', 'Europe/Berlin').start) / 3600000, 25);
   assert.throws(() => dayBounds('2026-02-31', 'Europe/Berlin'));
-  const day = dailyPeriods({}, { sunAutomation: { orientation: 166 } }, '2026-06-21');
+  const day = dailyPeriods({latitude:52.52,longitude:13.405}, { sunAutomation: { orientation: 166 } }, '2026-06-21');
   assert.ok(day.intervals.length >= 1);
   for (const interval of day.intervals) assert.ok(interval.start >= day.start && interval.end <= day.end && interval.end > interval.start);
 });
 test('overview exposes no hosts or passwords and distinguishes solar period from actual alarm status', () => {
   const now = Date.parse('2026-06-21T12:00:00Z');
-  const data = new Overview().build({ devices: [{ id: 'one', name: 'Blind', host: 'SECRET-HOST', password: 'SECRET-PASS', windProtection: true }] },
+  const data = new Overview().build({latitude:52.52,longitude:13.405, devices: [{ id: 'one', name: 'Blind', host: 'SECRET-HOST', password: 'SECRET-PASS', windProtection: true }] },
     '2026-06-21', [{ id: 'one', online: true, windAlarm: true, updatedAt: now }], now);
   assert.equal(data.rows[0].status.kind, 'alarm');
   assert.ok(data.rows[0].period.intervals.length);

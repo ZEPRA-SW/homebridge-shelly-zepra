@@ -6,7 +6,7 @@ const {SceneEngine,SceneStore}=require('./lib/scenes');
 const sceneRuntime=require('./lib/scene-runtime');
 const {ShadingBthome}=require('./lib/shading-bthome');
 const {shared}=require('./lib/cloud-queue');
-const {normalize,shadingConfig}=require('./homebridge-ui/public/shared-settings');
+const {normalize,shadingConfig,hasLocation,requiresLocation}=require('./homebridge-ui/public/shared-settings');
 const {translate,logger}=require('./lib/i18n');
 const {validate:validateDevices}=require('./engines/universal/lib/config');
 const {translate:format}=require('./homebridge-ui/public/i18n');
@@ -32,6 +32,7 @@ class CombinedPlatform{
       const zone=this.config.shading?.timeZone??'Europe/Berlin';
       try{if(typeof zone!=='string'||!zone.trim())throw Error();new Intl.DateTimeFormat('en-GB',{timeZone:zone});}
       catch{throw Error(translate('Ungültige Zeitzone. Beispiel: Europe/Berlin.',this.config.language));}
+      if(requiresLocation(this.config)&&!hasLocation(this.config.shading))throw Error(translate('Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben.',this.config.language));
       validateDevices({...this.config,devices:this.config.devices??[]});
       for(const device of this.config.shading?.devices??[])if(device.bthome!==undefined){
         if(device.bthome?.some?.(b=>b?.buttonIndices?.length))throw Error(translate('BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.',this.config.language));
@@ -40,7 +41,7 @@ class CombinedPlatform{
         else if(!Array.isArray(device.bthome))throw Error('bthome muss eine Liste sein.');
       }
     }catch(error){
-      const language=config?.language??config?.shading?.language??'de';
+      const language=config?.language??config?.shading?.language??'en';
       this.configurationError=true;this.log=logger(log,language);
       this.log.error(format('Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}',language,{reason:translate(error.message,language)}));
       return;

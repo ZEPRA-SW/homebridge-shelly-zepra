@@ -23,7 +23,7 @@ test('hidden shading keeps its runtime and persisted state through hidden restar
  global.fetch=async(url,options)=>{const f=JSON.parse(options.body);methods.push(f.method);return Response.json({id:f.id,result:f.method==='Shelly.GetDeviceInfo'?{mac:cover.shellyDeviceId}:f.method==='Cover.GetConfig'?{slat:{enable:true}}:{pos_control:true,current_pos:50,slat_pos:50,state:'stopped'}});};
  const uuid=api0.hap.uuid.generate('homebridge-shelly-raffstore:'+cover.id);
  async function boot(hidden,seed){const api=new HomebridgeAPI(),registered=[],removed=[];api.registerPlatformAccessories=(_p,_n,a)=>registered.push(...a);api.updatePlatformAccessories=()=>{};api.unregisterPlatformAccessories=(_p,_n,a)=>removed.push(...a);
-  const p=new CombinedPlatform({info(){},warn(){},error:assert.fail},{devices:[],shading:{globalControls:false,devices:[{...cover,homekitEnabled:!hidden}]}},api);
+  const p=new CombinedPlatform({info(){},warn(){},error:assert.fail},{devices:[],shading:{latitude:52.52,longitude:13.405,globalControls:false,devices:[{...cover,homekitEnabled:!hidden}]}},api);
   if(seed){const a=new api.platformAccessory('Cover',uuid);a.context={deviceId:cover.id,combinedEngine:'shading',sunState:{enabled:false},dailyRebootState:{lastAttemptDay:'2026-11-12'}};p.configureAccessory(a);}
   api.emit('didFinishLaunching');await p.shading.devices[0].initialPoll;
   assert.ok(p.shading.devices[0].automation);assert.equal(p.shading.devices[0].automation.enabled,false);assert.equal(p.shading.devices.length,1);

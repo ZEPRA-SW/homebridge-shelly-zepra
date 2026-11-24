@@ -39,7 +39,7 @@ test('every shading settings title and hint has a complete four-language catalog
 test('solar range validation localizes its label and bounds without changing raw identifiers', () => {
   const config = { sunAutomation: { enabled: true, slatStep: 21 } };
   let message;
-  try { solarConfig({}, config); } catch (error) { message = error.message; }
+  try { solarConfig({latitude:52.52,longitude:13.405}, config); } catch (error) { message = error.message; }
   assert.equal(message, 'Lamellen-Mindeständerung muss zwischen 1 und 20 liegen.');
   assert.equal(translate(message, 'en'), 'Minimum slat change must be between 1 and 20.');
   assert.equal(translate(message, 'fr'), 'Variation minimale des lamelles : valeur attendue entre 1 et 20.');

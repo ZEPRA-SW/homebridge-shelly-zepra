@@ -1,13 +1,14 @@
 'use strict';
 (() => {
  const area=window.name==='shading'?'shading':'devices',suite=parent.ShellyZepra;
+ const theme=suite.getTheme();document.documentElement.dataset.zepraTheme=theme;document.documentElement.dataset.raffstoreTheme=theme;
  window.homebridge={
   zepraSharedSettings:true,
   getPluginConfig:()=>suite.getConfig(area),getPluginConfigSchema:()=>suite.getSchema(area),
   updatePluginConfig:blocks=>suite.update(area,blocks),
   enableSaveButton:()=>suite.valid(area,true),disableSaveButton:()=>suite.valid(area,false),
   request:(...args)=>parent.homebridge.request(...args),
-  userCurrentLightingMode:()=>parent.homebridge.userCurrentLightingMode?.(),
+  userCurrentLightingMode:()=>Promise.resolve(suite.getTheme()),
   showSchemaForm:()=>parent.homebridge.showSchemaForm?.(),
   addEventListener:(name,fn)=>{if(name==='ready')queueMicrotask(fn);},
  };

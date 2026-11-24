@@ -10,7 +10,7 @@ const scope=(area,deviceId,sensorId='',component='')=>JSON.stringify([area,devic
  try{for(const language of ['de','en','fr','es']){
   const page=await browser.newPage({viewport:{width:1120,height:1000}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.setContent('<section id="scenes-panel"><p id="scene-error"></p><p id="scene-empty"></p><button id="scene-add"></button><button id="scene-refresh"></button><div id="scene-list"></div></section>');
-  await page.addStyleTag({content:fs.readFileSync(path.join(pub,'style.css'),'utf8')});
+  await require('./mount-ui.cjs')(page);await page.addStyleTag({content:fs.readFileSync(path.join(pub,'style.css'),'utf8')});
   for(const file of ['i18n.js','common-i18n.js','scenes-i18n.js','devices/models.js','scene-model.js','scenes-ui.js'])await page.addScriptTag({content:fs.readFileSync(path.join(pub,file),'utf8')});
   await page.evaluate(async language=>{
    const weather={id:'weather',name:'Alpha weather',deviceComponent:'bthomedevice:200',sensorType:'ws90',staleAfter:120},contact={id:'contact',name:'Bravo window',deviceComponent:'bthomedevice:201',sensorType:'blu-doorwindow'},cold={id:'cold',name:'Cold outdoor',deviceComponent:'bthomedevice:202',sensorType:'blu-ht'};

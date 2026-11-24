@@ -88,7 +88,7 @@ for(const [name,timeZone,devices]of [
  ['a non-string zone',42,[]],
 ])test('invalid global time zone rejects startup for '+name,async t=>{
  const h=await rejectSafely(t,{devices:[],shading:{timeZone,devices}});
- assert.match(h.logs[0].message,/Ungültige Zeitzone/);
+ assert.match(h.logs[0].message,/Invalid time zone/);
 });
 
 for(const timeZone of ['UTC','Europe/Berlin',null])test('valid or default global time zone permits empty startup: '+timeZone,async t=>{
@@ -100,3 +100,5 @@ for(const timeZone of ['UTC','Europe/Berlin',null])test('valid or default global
  assert.doesNotThrow(()=>h.api.emit('didFinishLaunching'));await platform.devices.statusStore.tail;
  assert.equal(platform.devices.running,true);assert.deepEqual(h.network,[]);assert.deepEqual(h.changes,[]);
 });
+
+test('enabled solar automation without a site is rejected before stores and device requests are started',async t=>{const h=await rejectSafely(t,{devices:[],shading:{devices:[{...shading,sunAutomation:{enabled:true}}]}});assert.match(h.logs[0].message,/valid coordinates/);});

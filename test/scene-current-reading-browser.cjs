@@ -9,7 +9,7 @@ const pub=path.join(__dirname,'../homebridge-ui/public');
  try{for(const language of ['de','en','fr','es']){
   const page=await browser.newPage({viewport:{width:1140,height:1000}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.setContent('<section id="scenes-panel"><p id="scene-error"></p><p id="scene-empty"></p><button id="scene-add"></button><button id="scene-refresh"></button><div id="scene-list"></div></section>');
-  await page.addStyleTag({content:fs.readFileSync(path.join(pub,'style.css'),'utf8')});
+  await require('./mount-ui.cjs')(page);await page.addStyleTag({content:fs.readFileSync(path.join(pub,'style.css'),'utf8')});
   for(const file of ['i18n.js','common-i18n.js','scenes-i18n.js','devices/models.js','scene-model.js','scenes-ui.js'])await page.addScriptTag({content:fs.readFileSync(path.join(pub,file),'utf8')});
   await page.evaluate(async language=>{
    const weather={id:'weather-keep',name:'A very long weather station label that must not hide the measurement name',deviceComponent:'bthomedevice:200',sensorType:'ws90',staleAfter:120},contact={id:'contact-keep',name:'Kitchen window',deviceComponent:'bthomedevice:201',sensorType:'blu-doorwindow'},motion={id:'motion-keep',name:'Hall motion',deviceComponent:'bthomedevice:202',sensorType:'blu-motion'};

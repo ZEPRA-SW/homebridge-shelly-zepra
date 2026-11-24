@@ -1,4 +1,5 @@
 'use strict';
+const {pollDelay}=require('../../lib/local-poll');
 const {validate}=require('./lib/config');
 const {Client}=require('./lib/client');
 const {CloudClient}=require('./lib/cloud');
@@ -211,7 +212,7 @@ class Platform {
             unit.writeTail=job.catch(()=>{});await job;
             if(d.momentary){clearTimeout(record.momentaryTimer);record.momentaryTimer=setTimeout(()=>{if(!record.offline)service.getCharacteristic(C.On).updateValue(false);},300);record.momentaryTimer.unref?.();}
             this.poll(unit);
-          } catch(e) {this.log.error(unit.config.id+': '+e.message);throw this.error();}
+          } catch(e) {this.log.error(unit.config.id+': '+e.message+(e.rpcDiagnostic?' '+JSON.stringify(e.rpcDiagnostic):''));throw this.error();}
         });
         ch.updateValue(fault||d.fault?this.error():value);
       }
@@ -276,12 +277,12 @@ class Platform {
     } catch(e) {
       unit.sceneOnline=false;
       this.statusStore?.update(unit.config.id,false);
-      if(unit.failures++===0 || unit.failures%12===0)this.log.error(unit.config.id+': '+e.message);
+      if(unit.failures++===0 || unit.failures%12===0)this.log.error(unit.config.id+': '+e.message+(e.rpcDiagnostic?' '+JSON.stringify(e.rpcDiagnostic):''));
       unit.events?.stop();unit.events=null;
       for(const r of unit.accessories){r.offline=true;for(const s of r.accessory.services) if(s.subtype?.startsWith('su:')) for(const c of s.characteristics) if(c.UUID!==this.api.hap.Characteristic.Name.UUID)c.updateValue(this.error());}
     } finally {
       unit.busy=false;
-      if(this.running){unit.timer=setTimeout(()=>this.poll(unit),(this.config.pollInterval || 10)*1000);unit.timer.unref?.();}
+      if(this.running){const interval=(this.config.pollInterval||10)*1000;unit.pollCycle=(unit.pollCycle||0)+1;unit.timer=setTimeout(()=>this.poll(unit),unit.config.connection==='cloud'?interval:pollDelay(interval,unit.config.id,unit.pollCycle));unit.timer.unref?.();}
     }
   }
   event(unit,event,value) {

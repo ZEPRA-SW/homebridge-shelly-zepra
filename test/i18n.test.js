@@ -21,7 +21,7 @@ test('template translation escapes punctuation, preserves names and only transla
  assert.equal(I.translate('Failure [{name}]: {reason}.','de',{name:'Kitchen',reason:'offline'},'test'),'Failure [Kitchen]: offline.');
 });
 test('unsupported language falls back safely and locales cover all supported languages',()=>{
- assert.equal(I.normalizeLanguage('xx'),'de');assert.equal(I.translate('Sprache','xx'),'Sprache');
+ assert.equal(I.normalizeLanguage('xx'),'en');assert.equal(I.translate('Sprache','xx'),'Language');
  assert.deepEqual(I.languages.map(I.locale),['de-DE','en-GB','fr-FR','es-ES']);
 });
 test('language changes translate existing Scene history while preserving event types and device names',()=>{

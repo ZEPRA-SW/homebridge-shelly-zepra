@@ -193,16 +193,16 @@
       svg.setAttribute('aria-label', t('Sonnenbereich links') + ' ' + left + '°, ' + t('Sonnenbereich rechts') + ' ' + right + '°');
       const point = angle => [210 + 130 * Math.sin(angle * Math.PI / 180), 175 - 130 * Math.cos(angle * Math.PI / 180)];
       const lp = point(-left), rp = point(right);
-      node('path', {d: 'M210 175 L210 45 A130 130 0 0 0 ' + lp.join(' ') + ' Z', fill: '#6eb9ee', opacity: '.22'});
-      node('path', {d: 'M210 175 L210 45 A130 130 0 0 1 ' + rp.join(' ') + ' Z', fill: '#bd91ff', opacity: '.22'});
-      for (const [p, color] of [[lp, '#6eb9ee'], [rp, '#bd91ff']]) node('line', {x1:210,y1:175,x2:p[0],y2:p[1],stroke:color,'stroke-width':3});
+      node('path', {d: 'M210 175 L210 45 A130 130 0 0 0 ' + lp.join(' ') + ' Z', fill: 'var(--angle-left)', opacity: '.22'});
+      node('path', {d: 'M210 175 L210 45 A130 130 0 0 1 ' + rp.join(' ') + ' Z', fill: 'var(--angle-right)', opacity: '.22'});
+      for (const [p, color] of [[lp, 'var(--angle-left)'], [rp, 'var(--angle-right)']]) node('line', {x1:210,y1:175,x2:p[0],y2:p[1],stroke:color,'stroke-width':3});
       node('line', {x1:210,y1:175,x2:210,y2:40,stroke:'currentColor','stroke-width':2,'stroke-dasharray':'5 4'});
       node('path', {d:'M203 51 L210 40 L217 51',fill:'none',stroke:'currentColor','stroke-width':2});
       node('rect', {x:150,y:175,width:120,height:9,rx:3,fill:'currentColor'});
       const text = (x,y,value,color) => node('text', {x,y,'text-anchor':'middle',fill:color || 'currentColor','font-size':14}, value);
       text(210,22,t('Blick nach außen'));
-      text(75,105,t('Links') + ' ' + left + '°','#6eb9ee');
-      text(345,105,t('Rechts') + ' ' + right + '°','#bd91ff');
+      text(75,105,t('Links') + ' ' + left + '°','var(--angle-left)');
+      text(345,105,t('Rechts') + ' ' + right + '°','var(--angle-right)');
       text(210,207,t('Fensterausrichtung') + ': ' + (cfg.orientation ?? 166) + '°');
     };
     wrap.append(header, svg, el('p', 'hint', 'Kleinere Winkel begrenzen den Sonnenbereich auf der jeweiligen Seite. Die Fensterausrichtung bleibt unverändert. Gebäude und Hindernisse werden nicht automatisch erkannt.'));
@@ -410,7 +410,7 @@
     if (!data.rows.length) root.append(el('div', 'empty', 'Unter Einstellungen zuerst einen Raffstore oder Rollladen hinzufügen.'));
     $('day').value = data.date;
     const cfg = configuration();
-    $('location').textContent = t('Standort') + ' ' + (cfg.latitude ?? 52.52) + '° N, ' + (cfg.longitude ?? 13.405) + '° E · ' + data.timeZone;
+    $('location').textContent = t('Standort') + ' ' + (cfg.latitude ?? '—') + '° N, ' + (cfg.longitude ?? '—') + '° E · ' + data.timeZone;
     const order = new Map(cfg.devices.map((device, index) => [device.id, index]));
     const rows = [...data.rows].sort((a, b) => (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity));
     for (const row of rows) {

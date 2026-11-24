@@ -62,9 +62,10 @@ function solarConfig(global, device) {
     throw new Error('Sonnenautomatik einrichten muss ein Wahrheitswert sein.');
   }
   if (input?.enabled !== true) return null;
+  if(!Number.isFinite(global.latitude)||!Number.isFinite(global.longitude))throw new Error('Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben.');
   const cfg = {
-    latitude: number(global.latitude, 52.52, -89.9, 89.9, 'Breitengrad'),
-    longitude: number(global.longitude, 13.405, -180, 180, 'Längengrad'),
+    latitude: number(global.latitude, undefined, -89.9, 89.9, 'Breitengrad'),
+    longitude: number(global.longitude, undefined, -180, 180, 'Längengrad'),
     orientation: number(input.orientation, 166, 0, 359.9, 'Ausrichtung'),
     minElevation: number(input.minElevation, 5, 0, 80, 'Minimale Sonnenhöhe'),
     halfAngle: number(input.halfAngle, 80, 5, 89, 'Seitlicher Sonnenbereich'),

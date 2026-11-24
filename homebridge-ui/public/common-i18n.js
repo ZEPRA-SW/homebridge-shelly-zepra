@@ -54,7 +54,12 @@
     "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}",
     "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Ungültige Zeitzone. Beispiel: Europe/Berlin.",
     "BTHome-Sensoren an Beschattungen benötigen eine lokale Verbindung.": "BTHome-Sensoren an Beschattungen benötigen eine lokale Verbindung.",
-    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt."
+    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.",
+    "Zeitzone": "Zeitzone",
+    "Für neue Konfigurationen wird die Systemzeitzone der Homebridge vorausgewählt. Passende Zeitzone für den Standort wählen; sie gilt für Tagesübersicht, Scenes und geplante Neustarts.": "Für neue Konfigurationen wird die Systemzeitzone der Homebridge vorausgewählt. Passende Zeitzone für den Standort wählen; sie gilt für Tagesübersicht, Scenes und geplante Neustarts.",
+    "Breitengrad des eigenen Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; der Standort wird nicht automatisch erkannt.": "Breitengrad des eigenen Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; der Standort wird nicht automatisch erkannt.",
+    "Längengrad desselben Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; keine Beispielkoordinaten übernehmen.": "Längengrad desselben Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; keine Beispielkoordinaten übernehmen.",
+    "Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben.": "Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben."
   },
   "en": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "One bridge · separate device areas · shared cloud queue",
@@ -109,7 +114,12 @@
     "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Invalid configuration. Shelly ZEPRA remains inactive. Correct the settings and restart the child bridge. Reason: {reason}",
     "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Invalid time zone. Example: Europe/Berlin.",
     "BTHome-Sensoren an Beschattungen benötigen eine lokale Verbindung.": "BTHome sensors on shading devices require a local connection.",
-    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "BTHome button events on shading devices are not yet supported."
+    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "BTHome button events on shading devices are not yet supported.",
+    "Zeitzone": "Time zone",
+    "Für neue Konfigurationen wird die Systemzeitzone der Homebridge vorausgewählt. Passende Zeitzone für den Standort wählen; sie gilt für Tagesübersicht, Scenes und geplante Neustarts.": "New configurations use the Homebridge system time zone. Select the time zone for your location; it applies to the daily overview, Scenes and scheduled reboots.",
+    "Breitengrad des eigenen Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; der Standort wird nicht automatisch erkannt.": "Enter the latitude of your own installation site. Required when solar automation is enabled; the location is not detected automatically.",
+    "Längengrad desselben Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; keine Beispielkoordinaten übernehmen.": "Enter the longitude of the same installation site. Required when solar automation is enabled; do not use example coordinates.",
+    "Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben.": "Enter valid coordinates for your installation before enabling solar automation."
   },
   "fr": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "Un pont · des espaces distincts · une file cloud commune",
@@ -164,7 +174,12 @@
     "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuration non valide. Shelly ZEPRA reste inactif. Corrigez les paramètres, puis redémarrez le pont enfant. Cause : {reason}",
     "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Fuseau horaire non valide. Exemple : Europe/Berlin.",
     "BTHome-Sensoren an Beschattungen benötigen eine lokale Verbindung.": "Les capteurs BTHome des stores nécessitent une connexion locale.",
-    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "Les événements de boutons BTHome des stores ne sont pas encore pris en charge."
+    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "Les événements de boutons BTHome des stores ne sont pas encore pris en charge.",
+    "Zeitzone": "Fuseau horaire",
+    "Für neue Konfigurationen wird die Systemzeitzone der Homebridge vorausgewählt. Passende Zeitzone für den Standort wählen; sie gilt für Tagesübersicht, Scenes und geplante Neustarts.": "Les nouvelles configurations utilisent le fuseau horaire du système Homebridge. Choisissez celui du lieu ; il s’applique à la vue quotidienne, aux scènes et aux redémarrages planifiés.",
+    "Breitengrad des eigenen Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; der Standort wird nicht automatisch erkannt.": "Saisissez la latitude de votre installation. Obligatoire si l’automatisation solaire est activée ; le lieu n’est pas détecté automatiquement.",
+    "Längengrad desselben Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; keine Beispielkoordinaten übernehmen.": "Saisissez la longitude du même lieu. Obligatoire si l’automatisation solaire est activée ; n’utilisez pas de coordonnées d’exemple.",
+    "Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben.": "Saisissez les coordonnées valides de votre installation avant d’activer l’automatisation solaire."
   },
   "es": {
     "Eine Bridge · getrennte Gerätebereiche · gemeinsame Cloud-Warteschlange": "Un puente · áreas de dispositivos separadas · cola de nube común",
@@ -219,7 +234,12 @@
     "Konfiguration ungültig. Shelly ZEPRA bleibt inaktiv. Bitte Einstellungen korrigieren und die Child-Bridge neu starten. Ursache: {reason}": "Configuración no válida. Shelly ZEPRA permanece inactivo. Corrija los ajustes y reinicie el puente secundario. Motivo: {reason}",
     "Ungültige Zeitzone. Beispiel: Europe/Berlin.": "Zona horaria no válida. Ejemplo: Europe/Berlin.",
     "BTHome-Sensoren an Beschattungen benötigen eine lokale Verbindung.": "Los sensores BTHome de persianas requieren una conexión local.",
-    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "Los eventos de botones BTHome de persianas aún no son compatibles."
+    "BTHome-Tastenereignisse an Beschattungen werden noch nicht unterstützt.": "Los eventos de botones BTHome de persianas aún no son compatibles.",
+    "Zeitzone": "Zona horaria",
+    "Für neue Konfigurationen wird die Systemzeitzone der Homebridge vorausgewählt. Passende Zeitzone für den Standort wählen; sie gilt für Tagesübersicht, Scenes und geplante Neustarts.": "Las nuevas configuraciones utilizan la zona horaria del sistema Homebridge. Seleccione la del lugar; se aplica al resumen diario, las escenas y los reinicios programados.",
+    "Breitengrad des eigenen Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; der Standort wird nicht automatisch erkannt.": "Introduzca la latitud de su instalación. Obligatoria al activar la automatización solar; la ubicación no se detecta automáticamente.",
+    "Längengrad desselben Installationsortes eingeben. Pflicht bei aktivierter Sonnenautomatik; keine Beispielkoordinaten übernehmen.": "Introduzca la longitud de la misma instalación. Obligatoria al activar la automatización solar; no utilice coordenadas de ejemplo.",
+    "Für die Sonnenautomatik bitte die eigenen gültigen Geokoordinaten eingeben.": "Introduzca las coordenadas válidas de su instalación antes de activar la automatización solar."
   }
 };
  I.register('common',catalogs);return catalogs;

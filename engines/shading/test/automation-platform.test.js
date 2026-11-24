@@ -47,7 +47,7 @@ function harness(device) {
     unregisterPlatformAccessories(p, n, list) { removed.push(...list); },
     updatePlatformAccessories() {},
   };
-  const config = { globalControls: false, devices: [{ id: 'one', name: 'Wohnzimmer', host: '192.0.2.1', shellyDeviceId: '000000000001', ...device }] };
+  const config = { latitude:52.52,longitude:13.405, globalControls: false, devices: [{ id: 'one', name: 'Wohnzimmer', host: '192.0.2.1', shellyDeviceId: '000000000001', ...device }] };
   const create = () => new ShellyPlatform({ error: assert.fail, warn() {} }, config, api);
   const calls = [];
   const status = { current_pos: 80, slat_pos: 100, pos_control: true, state: 'stopped', source: 'init' };
@@ -691,7 +691,7 @@ test('RPC diagnostic reaches platform log and varying durations do not bypass th
     await runtime.poll(); clearTimeout(runtime.timer);
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /Shelly.GetDeviceInfo/);
-    assert.match(warnings[0], /Cover.GetConfig/);
+    assert.match(warnings[0], /Cover.GetStatus/);
     assert.match(warnings[0], /elapsedMs/);
     assert.match(warnings[0], /ECONNRESET/);
     assert.doesNotMatch(warnings[0], /private/);

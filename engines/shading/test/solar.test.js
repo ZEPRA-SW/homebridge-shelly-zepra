@@ -41,10 +41,10 @@ test('cutoff geometry opens slats further at high or oblique sun; width and pitc
 });
 test('invalid solar settings fail before any commands', () => {
   for (const values of [{ orientation: '166' }, { endBehavior: 'bad' }, { slatSpacing: 100, slatWidth: 80 }]) {
-    assert.throws(() => solarConfig({}, { sunAutomation: { enabled: true, ...values } }));
+    assert.throws(() => solarConfig({latitude:52.52,longitude:13.405}, { sunAutomation: { enabled: true, ...values } }));
   }
-  assert.throws(() => solarConfig({}, { deviceType: 'roller', sunAutomation: { enabled: true, endBehavior: 'horizontal' } }));
-  assert.equal(solarConfig({}, {}), null);
+  assert.throws(() => solarConfig({latitude:52.52,longitude:13.405}, { deviceType: 'roller', sunAutomation: { enabled: true, endBehavior: 'horizontal' } }));
+  assert.equal(solarConfig({latitude:52.52,longitude:13.405}, {}), null);
 });
 
 function fixture(kind = 'raffstore', extra = {}, saved = {}) {
@@ -52,7 +52,7 @@ function fixture(kind = 'raffstore', extra = {}, saved = {}) {
   const sent = [];
   const persisted = [];
   const controller = { disposed: false, async move(target, allowed) { if (allowed()) sent.push(target); } };
-  const config = solarConfig({}, { deviceType: kind, sunAutomation: { enabled: true, delaySeconds: 0, ...extra } });
+  const config = solarConfig({latitude:52.52,longitude:13.405}, { deviceType: kind, sunAutomation: { enabled: true, delaySeconds: 0, ...extra } });
   const auto = new SunAutomation(config, controller, saved, value => persisted.push(value), () => now);
   const status = { state: 'stopped', current_pos: 100, slat_pos: 100 };
   return { auto, sent, controller, status, persisted,
@@ -328,12 +328,11 @@ test('slat tracking defaults to twenty minutes and respects a custom interval wi
   }
 });
 
-test('Berlin is the public default while explicitly saved coordinates are retained', () => {
+test('solar automation requires explicit coordinates and preserves saved locations', () => {
   const device = { sunAutomation: { enabled: true } };
-  const defaults = solarConfig({}, device);
-  assert.equal(defaults.latitude, 52.52);
-  assert.equal(defaults.longitude, 13.405);
+  assert.throws(()=>solarConfig({},device), /Geokoordinaten/);
+  assert.throws(()=>solarConfig({latitude:0},device), /Geokoordinaten/);
   const existing = solarConfig({ latitude: 48.8566, longitude: 2.3522 }, device);
-  assert.equal(existing.latitude, 48.8566);
-  assert.equal(existing.longitude, 2.3522);
+  assert.equal(existing.latitude, 48.8566);assert.equal(existing.longitude, 2.3522);
+  const zero=solarConfig({latitude:0,longitude:0},device);assert.equal(zero.latitude,0);assert.equal(zero.longitude,0);
 });

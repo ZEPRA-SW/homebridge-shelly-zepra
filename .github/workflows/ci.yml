@@ -69,3 +69,7 @@ jobs:
       - run: node test/scene-current-reading-browser.cjs
         env:
           PLAYWRIGHT_CHANNEL: bundled
+
+      - run: node test/defaults-browser.cjs
+        env:
+          PLAYWRIGHT_CHANNEL: bundled

@@ -8,7 +8,7 @@ const TRANSIENT_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHO
 const sha = value => createHash('sha256').update(value).digest('hex');
 
 class ShellyClient {
-  constructor(config, fetcher = fetch) {
+  constructor(config, fetcher = fetch, options = {}) {
     const url = new URL(config.host.includes('://') ? config.host : 'http://' + config.host);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
         url.search || url.hash || !['', '/'].includes(url.pathname)) {
@@ -26,10 +26,12 @@ class ShellyClient {
     this.challenge = null;
     this.count = 0;
     this.tail = Promise.resolve();
+    this.clock=options.now??(()=>performance.now());this.coverConfigs=new Map();this.identitySignature=null;
   }
 
   call(method, params = {}, allowed) {
     const execute = async () => {
+      if(method==='Shelly.Reboot'||method.startsWith('Cover.')&&!RETRYABLE_READS.has(method))this.coverConfigs.clear();
       if (method.startsWith('Cover.') || method === 'Shelly.Reboot') {
         const info = await this.request('Shelly.GetDeviceInfo', {}, { operation: method, channel: params.id });
         this.verifyIdentity(info);
@@ -64,17 +66,40 @@ class ShellyClient {
     return job;
   }
 
+  // One fresh identity check per read-only poll; no cached status or cached write permission.
+  readCover(id=0){
+    if(!Number.isInteger(id)||id<0)return Promise.reject(Error('Ungültiger Kanal.'));
+    const job=this.tail.then(async()=>{
+      for(let attempt=1;attempt<=2;attempt++)try{
+        this.verifyIdentity(await this.request('Shelly.GetDeviceInfo',{}, {operation:'Cover.GetStatus',channel:id}));
+        const now=this.clock(),cached=this.coverConfigs.get(id);let config;
+        if(cached&&now>=cached.at&&now-cached.at<60000)config=structuredClone(cached.value);
+        else{config=await this.request('Cover.GetConfig',{id},{operation:'Cover.GetConfig',channel:id});if(config&&typeof config==='object')this.coverConfigs.set(id,{at:this.clock(),value:structuredClone(config)});}
+        const status=await this.request('Cover.GetStatus',{id},{operation:'Cover.GetStatus',channel:id});
+        return {config,status};
+      }catch(error){
+        this.coverConfigs.delete(id);const d=error.rpcDiagnostic;
+        const transient=d?.category==='timeout'||d?.category==='network'&&d.causeCodes?.length&&d.causeCodes.every(code=>TRANSIENT_CODES.has(code));
+        if(!transient)throw error;if(attempt===2){d.readAttempt=2;throw error;}
+        await new Promise(resolve=>setTimeout(resolve,500));
+      }
+    });this.tail=job.catch(()=>{});return job;
+  }
+
   verifyIdentity(info) {
     const expected = this.expectedDeviceId.replace(/:/g, '');
     const actualMac = typeof info?.mac === 'string' ? info.mac.replace(/:/g, '').toLowerCase() : '';
     const actualId = typeof info?.id === 'string' ? info.id.toLowerCase() : '';
     if (expected !== actualId && expected !== actualMac) {
+      this.coverConfigs.clear();
       const error = new Error('Shelly-Ger\u00e4te-ID stimmt an dieser IP-Adresse nicht \u00fcberein. Aufruf gesperrt.');
       error.code = 'SHELLY_ID_MISMATCH';
       error.expectedId = this.expectedDeviceId;
       error.actualId = actualId || actualMac || 'unknown';
       throw error;
     }
+    const signature=JSON.stringify([actualMac,actualId,info?.fw_id??info?.fw??info?.ver??'',info?.profile??info?.app??'']);
+    if(this.identitySignature!==signature)this.coverConfigs.clear();this.identitySignature=signature;
   }
 
   snapshotComponents(configured = []) {

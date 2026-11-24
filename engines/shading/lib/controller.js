@@ -35,9 +35,10 @@ class CoverController {
     return result;
   }
   async read() {
-    const config = await this.client.call('Cover.GetConfig', { id: this.id });
+    const snapshot = typeof this.client.readCover==='function'?await this.client.readCover(this.id):null;
+    const config = snapshot?snapshot.config:await this.client.call('Cover.GetConfig', { id: this.id });
     if (this.kind === 'raffstore' && config?.slat?.enable !== true) throw new Error('Lamellensteuerung im Shelly aktivieren.');
-    const status = await this.client.call('Cover.GetStatus', { id: this.id });
+    const status = snapshot?snapshot.status:await this.client.call('Cover.GetStatus', { id: this.id });
     if (status?.pos_control !== true || !validPercent(status.current_pos)) {
       throw new Error('Shelly kalibrieren und eine bekannte Behangposition herstellen.');
     }

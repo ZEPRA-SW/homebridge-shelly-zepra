@@ -4,7 +4,7 @@ const I=require('../homebridge-ui/public/i18n');require('../homebridge-ui/public
 const pub=path.join(__dirname,'../homebridge-ui/public');
 (async()=>{const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHANNEL==='bundled'?{}:{channel:process.env.PLAYWRIGHT_CHANNEL||'msedge'})});try{for(const language of ['de','en','fr','es']){
  const page=await browser.newPage({viewport:{width:1100,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setContent('<section id="scenes-panel"><p id="scene-error"></p><p id="scene-empty"></p><button id="scene-add"></button><button id="scene-refresh"></button><div id="scene-list"></div></section>');
- await page.addStyleTag({content:fs.readFileSync(path.join(pub,'style.css'),'utf8')});
+ await require('./mount-ui.cjs')(page);await page.addStyleTag({content:fs.readFileSync(path.join(pub,'style.css'),'utf8')});
  for(const name of ['i18n.js','common-i18n.js','scenes-i18n.js','scene-model.js','scenes-ui.js'])await page.addScriptTag({content:fs.readFileSync(path.join(pub,name),'utf8')});
  await page.evaluate(async language=>{
   window.tempRef={area:'devices',deviceId:'temperature-id',component:'temperature:100',metric:'CurrentTemperature'};window.humidityRef={area:'devices',deviceId:'humidity-id',sensorId:'Kitchen:RH',component:'bthomesensor:203',metric:'CurrentRelativeHumidity'};

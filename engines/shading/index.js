@@ -1,4 +1,5 @@
 'use strict';
+const {pollDelay}=require('../../lib/local-poll');
 const { ShellyClient } = require('./lib/client');
 const { ShellyCloudClient } = require('./lib/cloud-client');
 const { CoverController, toAngle, toPercent } = require('./lib/controller');
@@ -429,7 +430,7 @@ class ShellyPlatform {
         await this.bthomeBridge.poll(runtime);
         if (!controller.disposed) publish();
       }
-      if (!controller.disposed) runtime.timer = setTimeout(runtime.poll, interval * 1000);
+      if (!controller.disposed) {runtime.pollCycle=(runtime.pollCycle||0)+1;runtime.timer = setTimeout(runtime.poll, config.connection==='cloud'?interval*1000:pollDelay(interval*1000,config.id,runtime.pollCycle));}
     };
     return runtime;
   }
